@@ -3,11 +3,13 @@
 
 
 .svg-funnel-js {
+
 	display: inline-block;
 	position: relative;
 
 	svg {
 		display: block;
+    	margin: auto;
 	}
 
 	.svg-funnel-js__labels {
@@ -19,9 +21,9 @@
 		left: 0;
 	}
 
-    &.svg-funnel-js--vertical {
-        .svg-funnel-js__labels {
-            flex-direction: column;
-        }
-    }
+	&.svg-funnel-js--vertical {
+		.svg-funnel-js__labels {
+			flex-direction: column;
+		}
+	}
 }

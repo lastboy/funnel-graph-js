@@ -12,20 +12,6 @@ const removeAttrs = (element, ...attributes) => {
     });
 };
 
-const createSVGElement = (element, container, attributes) => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', element);
-
-    if (typeof attributes === 'object') {
-        setAttrs(el, attributes);
-    }
-
-    if (typeof container !== 'undefined') {
-        container.appendChild(el);
-    }
-
-    return el;
-};
-
 const generateLegendBackground = (color, direction = 'horizontal') => {
     if (typeof color === 'string') {
         return `background-color: ${color}`;
@@ -97,5 +83,5 @@ const areEqual = (value, newValue) => {
 };
 
 export {
-    generateLegendBackground, getDefaultColors, areEqual, createSVGElement, setAttrs, removeAttrs, defaultColors
+    generateLegendBackground, getDefaultColors, areEqual, setAttrs, removeAttrs, defaultColors
 };

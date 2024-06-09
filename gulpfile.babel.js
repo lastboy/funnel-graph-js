@@ -32,7 +32,7 @@ const styles = () => {
 const scripts = () => browserify({
     entries: './index.js',
     standalone: 'FunnelGraph'
-}).transform(babelify, { presets: ['@babel/preset-env'] })
+}).transform(babelify, { global: true, presets: ['@babel/preset-env'] })
     .bundle()
     .pipe(source('funnel-graph.js'))
     .pipe(gulp.dest('dist/js'))

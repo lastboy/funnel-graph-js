@@ -1,14 +1,20 @@
 /* eslint-disable no-trailing-spaces */
 /* global HTMLElement */
 import { roundPoint, formatNumber } from './number';
-import { createPath, createVerticalPath } from './path';
 import {
-    generateLegendBackground, getDefaultColors, createSVGElement, setAttrs, removeAttrs
+    generateLegendBackground, getDefaultColors, setAttrs, removeAttrs
 } from './graph';
-import generateRandomIdString from './random';
+
+import { getCrossAxisPoints, getPathDefinitions } from './path'
+import { createRootSVG, getRootSvg, rotateSVG, getRootSvgGroup, getContainer, applyGradient } from './d3'
+import { select } from 'd3-selection';
+import { interpolateString } from 'd3-interpolate';
+import { nanoid } from 'nanoid';
+
 
 class FunnelGraph {
     constructor(options) {
+        this.id = nanoid();
         this.containerSelector = options.container;
         this.gradientDirection = (options.gradientDirection && options.gradientDirection === 'vertical')
             ? 'vertical'
@@ -24,94 +30,10 @@ class FunnelGraph {
         this.height = options.height;
         this.width = options.width;
         this.subLabelValue = options.subLabelValue || 'percent';
+
     }
 
-    /**
-    An example of a two-dimensional funnel graph
-    #0..................
-                       ...#1................
-                                           ......
-    #0********************#1**                    #2.........................#3 (A)
-                              *******************
-                                                  #2*************************#3 (B)
-                                                  #2+++++++++++++++++++++++++#3 (C)
-                              +++++++++++++++++++
-    #0++++++++++++++++++++#1++                    #2-------------------------#3 (D)
-                                           ------
-                       ---#1----------------
-    #0-----------------
-     Main axis is the primary axis of the graph.
-     In a horizontal graph it's the X axis, and Y is the cross axis.
-     However we use the names "main" and "cross" axis,
-     because in a vertical graph the primary axis is the Y axis
-     and the cross axis is the X axis.
-     First step of drawing the funnel graph is getting the coordinates of points,
-     that are used when drawing the paths.
-     There are 4 paths in the example above: A, B, C and D.
-     Such funnel has 3 labels and 3 subLabels.
-     This means that the main axis has 4 points (number of labels + 1)
-     One the ASCII illustrated graph above, those points are illustrated with a # symbol.
-    */
-    getMainAxisPoints() {
-        const size = this.getDataSize();
-        const points = [];
-        const fullDimension = this.isVertical() ? this.getHeight() : this.getWidth();
-        for (let i = 0; i <= size; i++) {
-            points.push(roundPoint(fullDimension * i / size));
-        }
-        return points;
-    }
 
-    getCrossAxisPoints() {
-        const points = [];
-        const fullDimension = this.getFullDimension();
-        // get half of the graph container height or width, since funnel shape is symmetric
-        // we use this when calculating the "A" shape
-        const dimension = fullDimension / 2;
-        if (this.is2d()) {
-            const totalValues = this.getValues2d();
-            const max = Math.max(...totalValues);
-
-            // duplicate last value
-            totalValues.push([...totalValues].pop());
-            // get points for path "A"
-            points.push(totalValues.map(value => roundPoint((max - value) / max * dimension)));
-            // percentages with duplicated last value
-            const percentagesFull = this.getPercentages2d();
-            const pointsOfFirstPath = points[0];
-
-            for (let i = 1; i < this.getSubDataSize(); i++) {
-                const p = points[i - 1];
-                const newPoints = [];
-
-                for (let j = 0; j < this.getDataSize(); j++) {
-                    newPoints.push(roundPoint(
-                        // eslint-disable-next-line comma-dangle
-                        p[j] + (fullDimension - pointsOfFirstPath[j] * 2) * (percentagesFull[j][i - 1] / 100)
-                    ));
-                }
-
-                // duplicate the last value as points #2 and #3 have the same value on the cross axis
-                newPoints.push([...newPoints].pop());
-                points.push(newPoints);
-            }
-
-            // add points for path "D", that is simply the "inverted" path "A"
-            points.push(pointsOfFirstPath.map(point => fullDimension - point));
-        } else {
-            // As you can see on the visualization above points #2 and #3 have the same cross axis coordinate
-            // so we duplicate the last value
-            const max = Math.max(...this.values);
-            const values = [...this.values].concat([...this.values].pop());
-            // if the graph is simple (not two-dimensional) then we have only paths "A" and "D"
-            // which are symmetric. So we get the points for "A" and then get points for "D" by subtracting "A"
-            // points from graph cross dimension length
-            points.push(values.map(value => roundPoint((max - value) / max * dimension)));
-            points.push(points[0].map(point => fullDimension - point));
-        }
-
-        return points;
-    }
 
     getGraphType() {
         return this.values && this.values[0] instanceof Array ? '2d' : 'normal';
@@ -131,10 +53,6 @@ class FunnelGraph {
 
     getSubDataSize() {
         return this.values[0].length;
-    }
-
-    getFullDimension() {
-        return this.isVertical() ? this.getWidth() : this.getHeight();
     }
 
     static getSubLabels(options) {
@@ -161,107 +79,6 @@ class FunnelGraph {
         return data.labels;
     }
 
-    addLabels() {
-        const holder = document.createElement('div');
-        holder.setAttribute('class', 'svg-funnel-js__labels');
-
-        this.percentages.forEach((percentage, index) => {
-            const labelElement = document.createElement('div');
-            labelElement.setAttribute('class', `svg-funnel-js__label label-${index + 1}`);
-
-            const title = document.createElement('div');
-            title.setAttribute('class', 'label__title');
-            title.textContent = this.labels[index] || '';
-
-            const value = document.createElement('div');
-            value.setAttribute('class', 'label__value');
-
-            const valueNumber = this.is2d() ? this.getValues2d()[index] : this.values[index];
-            value.textContent = formatNumber(valueNumber);
-
-            const percentageValue = document.createElement('div');
-            percentageValue.setAttribute('class', 'label__percentage');
-            percentageValue.textContent = `${percentage.toString()}%`;
-
-            labelElement.appendChild(value);
-            labelElement.appendChild(title);
-            if (this.displayPercent) {
-                labelElement.appendChild(percentageValue);
-            }
-
-            if (this.is2d()) {
-                const segmentPercentages = document.createElement('div');
-                segmentPercentages.setAttribute('class', 'label__segment-percentages');
-                let percentageList = '<ul class="segment-percentage__list">';
-
-                const twoDimPercentages = this.getPercentages2d();
-
-                this.subLabels.forEach((subLabel, j) => {
-                    const subLabelDisplayValue = this.subLabelValue === 'percent'
-                        ? `${twoDimPercentages[index][j]}%`
-                        : formatNumber(this.values[index][j]);
-                    percentageList += `<li>${this.subLabels[j]}:
-    <span class="percentage__list-label">${subLabelDisplayValue}</span>
- </li>`;
-                });
-                percentageList += '</ul>';
-                segmentPercentages.innerHTML = percentageList;
-                labelElement.appendChild(segmentPercentages);
-            }
-
-            holder.appendChild(labelElement);
-        });
-
-        this.container.appendChild(holder);
-    }
-
-    addSubLabels() {
-        if (this.subLabels) {
-            const subLabelsHolder = document.createElement('div');
-            subLabelsHolder.setAttribute('class', 'svg-funnel-js__subLabels');
-
-            let subLabelsHTML = '';
-
-            this.subLabels.forEach((subLabel, index) => {
-                subLabelsHTML += `<div class="svg-funnel-js__subLabel svg-funnel-js__subLabel-${index + 1}">
-    <div class="svg-funnel-js__subLabel--color"
-        style="${generateLegendBackground(this.colors[index], this.gradientDirection)}"></div>
-    <div class="svg-funnel-js__subLabel--title">${subLabel}</div>
-</div>`;
-            });
-
-            subLabelsHolder.innerHTML = subLabelsHTML;
-            this.container.appendChild(subLabelsHolder);
-        }
-    }
-
-    createContainer() {
-        if (!this.containerSelector) {
-            throw new Error('Container is missing');
-        }
-
-        if (typeof this.containerSelector === 'string') {
-            this.container = document.querySelector(this.containerSelector);
-            if (!this.container) {
-                throw new Error(`Container cannot be found (selector: ${this.containerSelector}).`);
-            }
-        } else if (this.container instanceof HTMLElement) {
-            this.container = this.containerSelector;
-        } else {
-            throw new Error('Container must either be a selector string or an HTMLElement.');
-        }
-
-        this.container.classList.add('svg-funnel-js');
-
-        this.graphContainer = document.createElement('div');
-        this.graphContainer.classList.add('svg-funnel-js__container');
-        this.container.appendChild(this.graphContainer);
-
-        if (this.direction === 'vertical') {
-            this.container.classList.add('svg-funnel-js--vertical');
-        }
-    }
-
     setValues(v) {
         this.values = v;
         return this;
@@ -282,6 +99,14 @@ class FunnelGraph {
         return this;
     }
 
+    getWidth() {
+        return this.width || getContainer(this.containerSelector).clientWidth;
+    }
+
+    getHeight() {
+        return this.height || getContainer(this.containerSelector).clientHeight;
+    }
+    
     static getValues(options) {
         if (!options.data) {
             return [];
@@ -330,182 +155,134 @@ class FunnelGraph {
         return values.map(value => (value === 0 ? 0 : roundPoint(value * 100 / max)));
     }
 
-    applyGradient(svg, path, colors, index) {
-        const defs = (svg.querySelector('defs') === null)
-            ? createSVGElement('defs', svg)
-            : svg.querySelector('defs');
-
-        const gradientName = generateRandomIdString(`funnelGradient-${index}-`);
-
-        const gradient = createSVGElement('linearGradient', defs, {
-            id: gradientName
+    drawPaths({
+        crossAxisPoints
+    }) {
+        const definitions = getPathDefinitions({
+            dataSize: this.getDataSize(),
+            isVertical: this.isVertical(),
+            height: this.getHeight(),
+            width: this.getWidth(),
+            crossAxisPoints
         });
 
-        if (this.gradientDirection === 'vertical') {
-            setAttrs(gradient, {
-                x1: '0',
-                x2: '0',
-                y1: '0',
-                y2: '1'
-            });
+        const rootSvg = getRootSvgGroup(this.id);
+        if (definitions && rootSvg) {
+          
+            const paths = rootSvg.selectAll('path')
+                .data(definitions.paths);
+
+                // const valuesNum = axisPointsSize - 1;
+
+                // for (let i = 0; i < valuesNum; i++) {
+                //     const d3Path = d3SvgGroup.append('path');
+            
+                //     const color = (is2d) ? colors[i] : colors;
+                //     const fillMode = (typeof color === 'string' || color.length === 1) ? 'solid' : 'gradient';
+            
+                //     if (fillMode === 'solid') {
+                //         d3Path
+                //             .attr('fill', color)
+                //             .attr('stroke', color);
+            
+                //     } else if (fillMode === 'gradient') {
+                //         applyGradient(d3SvgGroup, d3Path, color, i + 1, gradientDirection);
+                //     }
+                // }
+
+            const enterPaths = paths.enter()
+                .append('path')
+                .attr('d', d => d)  // Set initial path data
+                .attr('opacity', 0)  // Start with opacity 0 for a fade-in effect
+                .each((d, i, nodes) => {
+                    const d3Path = select(nodes[i]);
+                    const color = (this.is2d()) ? this.colors[i] : this.colors;
+                    const fillMode = (typeof color === 'string' || color.length === 1) ? 'solid' : 'gradient';
+            
+                    if (fillMode === 'solid') {
+                        d3Path
+                            .attr('fill', color)
+                            .attr('stroke', color);
+                    } else if (fillMode === 'gradient') {
+                        applyGradient(this.id, d3Path, color, i + 1, this.gradientDirection);
+                    }
+                })
+                .transition()
+                .duration(500)
+                .attr('opacity', 1);  // Fade in new paths
+
+            // Update existing paths
+            paths.merge(enterPaths)
+                .transition()
+                .duration(500)
+                .attr('d', d => d)  // Update the 'd' attribute
+                .attr('opacity', 1)  // Ensure paths are visible
+                .each((d, i, nodes) => {
+                    const d3Path = select(nodes[i]);
+                    const color = (this.is2d()) ? this.colors[i] : this.colors;
+                    const fillMode = (typeof color === 'string' || color.length === 1) ? 'solid' : 'gradient';
+            
+                    if (fillMode === 'solid') {
+                        d3Path
+                            .attr('fill', color)
+                            .attr('stroke', color);
+                    } else if (fillMode === 'gradient') {
+                        applyGradient(this.id, d3Path, color, i + 1, this.gradientDirection);
+                    }
+                });
+
+            // Exit and remove old paths
+            paths.exit()
+                .transition()
+                .duration(500)
+                .attr('opacity', 0)  // Fade out before removing
+                .remove();
         }
 
-        const numberOfColors = colors.length;
-
-        for (let i = 0; i < numberOfColors; i++) {
-            createSVGElement('stop', gradient, {
-                'stop-color': colors[i],
-                offset: `${Math.round(100 * i / (numberOfColors - 1))}%`
-            });
-        }
-
-        setAttrs(path, {
-            fill: `url("#${gradientName}")`,
-            stroke: `url("#${gradientName}")`
-        });
     }
 
-    makeSVG() {
-        const svg = createSVGElement('svg', this.graphContainer, {
+    draw() {
+
+        debugger;
+        const crossAxisPoints = getCrossAxisPoints({ 
+            values: this.values,
+            dataSize: this.getDataSize(),
+            subDataSize: this.getSubDataSize(),
+            values2d: this.is2d() ? this.getValues2d() : undefined,
+            percentages2d:  this.is2d() ? this.getPercentages2d() : undefined,
+            isVertical: this.isVertical(),
+            height: this.getHeight(),
+            width: this.getWidth(),
+            is2d: this.is2d()
+        });
+
+        createRootSVG({
+            id: this.id,
+            containerSelector: this.containerSelector,
+            axisPointsSize: crossAxisPoints?.length || 0,
+            is2d: this.is2d(),
+            colors: this.colors,
+            gradientDirection: this.gradientDirection,
             width: this.getWidth(),
             height: this.getHeight()
         });
 
-        const valuesNum = this.getCrossAxisPoints().length - 1;
-        for (let i = 0; i < valuesNum; i++) {
-            const path = createSVGElement('path', svg);
+        this.drawInfo();
 
-            const color = (this.is2d()) ? this.colors[i] : this.colors;
-            const fillMode = (typeof color === 'string' || color.length === 1) ? 'solid' : 'gradient';
-
-            if (fillMode === 'solid') {
-                setAttrs(path, {
-                    fill: color,
-                    stroke: color
-                });
-            } else if (fillMode === 'gradient') {
-                this.applyGradient(svg, path, color, i + 1);
-            }
-
-            svg.appendChild(path);
-        }
-
-        this.graphContainer.appendChild(svg);
-    }
-
-    getSVG() {
-        const svg = this.container.querySelector('svg');
-
-        if (!svg) {
-            throw new Error('No SVG found inside of the container');
-        }
-
-        return svg;
-    }
-
-    getWidth() {
-        return this.width || this.graphContainer.clientWidth;
-    }
-
-    getHeight() {
-        return this.height || this.graphContainer.clientHeight;
-    }
-
-    getPathDefinitions() {
-        const valuesNum = this.getCrossAxisPoints().length - 1;
-        const paths = [];
-        for (let i = 0; i < valuesNum; i++) {
-            if (this.isVertical()) {
-                const X = this.getCrossAxisPoints()[i];
-                const XNext = this.getCrossAxisPoints()[i + 1];
-                const Y = this.getMainAxisPoints();
-
-                const d = createVerticalPath(i, X, XNext, Y);
-                paths.push(d);
-            } else {
-                const X = this.getMainAxisPoints();
-                const Y = this.getCrossAxisPoints()[i];
-                const YNext = this.getCrossAxisPoints()[i + 1];
-
-                const d = createPath(i, X, Y, YNext);
-                paths.push(d);
-            }
-        }
-
-        return paths;
-    }
-
-    getPathMedian(i) {
-        if (this.isVertical()) {
-            const cross = this.getCrossAxisPoints()[i];
-            const next = this.getCrossAxisPoints()[i + 1];
-            const Y = this.getMainAxisPoints();
-            const X = [];
-            const XNext = [];
-
-            cross.forEach((point, index) => {
-                const m = (point + next[index]) / 2;
-                X.push(m - 1);
-                XNext.push(m + 1);
-            });
-
-            return createVerticalPath(i, X, XNext, Y);
-        }
-
-        const X = this.getMainAxisPoints();
-        const cross = this.getCrossAxisPoints()[i];
-        const next = this.getCrossAxisPoints()[i + 1];
-        const Y = [];
-        const YNext = [];
-
-        cross.forEach((point, index) => {
-            const m = (point + next[index]) / 2;
-            Y.push(m - 1);
-            YNext.push(m + 1);
-        });
-
-        return createPath(i, X, Y, YNext);
-    }
-
-    drawPaths() {
-        const svg = this.getSVG();
-        const paths = svg.querySelectorAll('path');
-        const definitions = this.getPathDefinitions();
-
-        definitions.forEach((definition, index) => {
-            paths[index].setAttribute('d', definition);
+        this.drawPaths({
+            crossAxisPoints
         });
     }
-
-    draw() {
-        this.createContainer();
-        this.makeSVG();
-
-        this.addLabels();
-
-        if (this.is2d()) {
-            this.addSubLabels();
-        }
-
-        this.drawPaths();
-    }
-
-    /*
-        Methods
-     */
 
     makeVertical() {
         if (this.direction === 'vertical') return true;
 
         this.direction = 'vertical';
-        this.container.classList.add('svg-funnel-js--vertical');
-
-        const svg = this.getSVG();
-        const height = this.getHeight();
-        const width = this.getWidth();
-        setAttrs(svg, { height, width });
-
-        this.drawPaths();
+        rotateSVG({
+            d3Svg: getRootSvg(this.id),
+            rotateFrom: 0,
+            rotateTo: 90
+        })
 
         return true;
     }
@@ -514,14 +291,12 @@ class FunnelGraph {
         if (this.direction === 'horizontal') return true;
 
         this.direction = 'horizontal';
-        this.container.classList.remove('svg-funnel-js--vertical');
 
-        const svg = this.getSVG();
-        const height = this.getHeight();
-        const width = this.getWidth();
-        setAttrs(svg, { height, width });
-
-        this.drawPaths();
+        rotateSVG({
+            d3Svg: getRootSvg(this.id),
+            rotateFrom: 90,
+            rotateTo: 0
+        })
 
         return true;
     }
@@ -535,31 +310,38 @@ class FunnelGraph {
     }
 
     gradientMakeVertical() {
-        if (this.gradientDirection === 'vertical') return true;
-
+        if (this.gradientDirection === 'vertical') {
+            return true;
+        }
         this.gradientDirection = 'vertical';
-        const gradients = this.graphContainer.querySelectorAll('linearGradient');
 
-        for (let i = 0; i < gradients.length; i++) {
-            setAttrs(gradients[i], {
-                x1: '0',
-                x2: '0',
-                y1: '0',
-                y2: '1'
-            });
+        const gradients = getRootSvg(this.id)?.select('defs')
+            ?.selectAll('linearGradient');
+
+        if (gradients) {
+            gradients.attr('x1', '0')
+                .attr('x2', '0')
+                .attr('y1', '0')
+                .attr('y2', '1');
         }
 
         return true;
     }
 
     gradientMakeHorizontal() {
-        if (this.gradientDirection === 'horizontal') return true;
-
+        if (this.gradientDirection === 'horizontal') {
+            return true;
+        }
         this.gradientDirection = 'horizontal';
-        const gradients = this.graphContainer.querySelectorAll('linearGradient');
 
-        for (let i = 0; i < gradients.length; i++) {
-            removeAttrs(gradients[i], 'x1', 'x2', 'y1', 'y2');
+        const gradients = getRootSvg(this.id)?.select('defs')
+            ?.selectAll('linearGradient');
+
+        if (gradients) {
+            gradients.attr('x1', null)
+                .attr('x2', null)
+                .attr('y1', null)
+                .attr('y2', null);
         }
 
         return true;
@@ -573,112 +355,142 @@ class FunnelGraph {
         }
     }
 
-    updateWidth(w) {
-        this.width = w;
-        const svg = this.getSVG();
-        const width = this.getWidth();
-        setAttrs(svg, { width });
+    drawInfo() {
+        const data = this.percentages;
 
-        this.drawPaths();
+        if (data) {
 
-        return true;
-    }
+            const info = data.map((percentage, index) => {
 
-    updateHeight(h) {
-        this.height = h;
-        const svg = this.getSVG();
-        const height = this.getHeight();
-        setAttrs(svg, { height });
+                const infoItem = { label: undefined, subLabel: undefined, value: undefined, percentage: undefined };
 
-        this.drawPaths();
+                // update value 
+                const valueNumber = this.is2d() ? this.getValues2d()[index] : this.values[index];
+                infoItem.value = formatNumber(valueNumber);
 
-        return true;
+                // update label
+                infoItem.label = this.labels[index] || 'NA';
+
+                // update percentage if set to true
+                if (this.displayPercent) {
+                    infoItem.percentage = `${percentage.toString()}%`
+                }
+
+                return infoItem;
+
+            });
+
+            const width = this.getWidth();
+            const height = this.getHeight()
+
+            // Calculate the spacing based on the number of labels
+            const gap = 2;
+            const spacing = width / (info.length + gap);
+
+            getRootSvg(this.id).selectAll('text.label__title')
+                .data(info)
+                .join(
+                    enter => enter.append('text')
+                        .attr('class', 'label__title')
+                        .attr('x', (d, i) => (spacing / gap) + (i * spacing))
+                        .attr('y', 10)
+                        .attr('text-anchor', 'middle')
+                        .attr('dominant-baseline', 'middle')
+                        .attr('fill', 'white')
+                        .text(d => d.value),
+                    update => update
+                        .attr('x', (d, i) => (spacing / gap) + (i * spacing))
+                        .text(d => d.value),
+                    exit => exit.remove()
+                );
+
+            // Bind data to the 'line' elements
+            const lines = getRootSvg(this.id).selectAll('.divider')
+                .data(info);
+
+            // Enter selection: Handle new data elements that do not yet have corresponding DOM elements
+            const enterLines = lines.enter()
+                .append('line')
+                .attr('class', 'divider')
+                .attr('x1', (d, i) => spacing * (i + 1))
+                .attr('y1', 0)
+                .attr('x2', (d, i) => spacing * (i + 1))
+                .attr('y2', height) // Assuming y2 is constant at the height of the SVG
+                .attr('stroke', 'grey')
+                .attr('stroke-width', 1);
+
+            // Update selection: Update attributes for existing elements
+            lines.merge(enterLines)
+                .transition() // Apply transitions to smoothly update line positions
+                .duration(500)
+                .attr('x1', (d, i) => spacing * (i + 1))
+                .attr('y1', 0)
+                .attr('x2', (d, i) => spacing * (i + 1))
+                .attr('y2', height)
+                .attr('stroke', 'grey')
+                .attr('stroke-width', 1);
+
+            // Exit selection: Handle lines that no longer have corresponding data
+            lines.exit()
+                .transition()
+                .duration(500)
+                .attr('stroke-opacity', 0) // Fade out before removing
+                .remove();
+        }
     }
 
     // @TODO: refactor data update
     updateData(d) {
-        const labels = this.container.querySelector('.svg-funnel-js__labels');
-        const subLabels = this.container.querySelector('.svg-funnel-js__subLabels');
 
-        if (labels) labels.remove();
-        if (subLabels) subLabels.remove();
-
-        this.labels = [];
-        this.colors = getDefaultColors(this.is2d() ? this.getSubDataSize() : 2);
-        this.values = [];
-        this.percentages = [];
+        if (typeof d.values !== 'undefined') {
+            // Update values using the predefined function that processes data appropriately
+            this.values = FunnelGraph.getValues({ data: d });
+        }
 
         if (typeof d.labels !== 'undefined') {
+            // Update labels if specified in the new data
             this.labels = FunnelGraph.getLabels({ data: d });
         }
+
         if (typeof d.colors !== 'undefined') {
+            // Update colors if specified, or use default colors as a fallback
             this.colors = d.colors || getDefaultColors(this.is2d() ? this.getSubDataSize() : 2);
         }
-        if (typeof d.values !== 'undefined') {
-            if (Object.prototype.toString.call(d.values[0]) !== Object.prototype.toString.call(this.values[0])) {
-                this.container.querySelector('svg').remove();
-                this.values = FunnelGraph.getValues({ data: d });
-                this.makeSVG();
-            } else {
-                this.values = FunnelGraph.getValues({ data: d });
-            }
-            this.drawPaths();
-        }
+
+        // Calculate percentages for the graph based on the updated or existing values
         this.percentages = this.createPercentages();
 
-        this.addLabels();
-
         if (typeof d.subLabels !== 'undefined') {
+            // Update subLabels if specified in the new data
             this.subLabels = FunnelGraph.getSubLabels({ data: d });
-            this.addSubLabels();
         }
+
+        // Redraw the information on the graph to reflect any changes
+        this.drawInfo();
+
+        if (typeof d.values !== 'undefined') {
+            // Update values using the predefined function that processes data appropriately
+            this.values = FunnelGraph.getValues({ data: d });
+
+            const crossAxisPoints = getCrossAxisPoints({ 
+                values: this.values,
+                dataSize: this.getDataSize(),
+                subDataSize: this.getSubDataSize(),
+                values2d: this.is2d() ? this.getValues2d() : undefined,
+                percentages2d: this.is2d() ? this.getPercentages2d() : undefined,
+                isVertical: this.isVertical(),
+                height: this.getHeight(),
+                width: this.getWidth(),
+                is2d: this.is2d()
+            });
+    
+            this.drawPaths({
+                crossAxisPoints
+            });  // Redraw the paths based on the new values
+        }
+
     }
 
-    update(o) {
-        if (typeof o.displayPercent !== 'undefined') {
-            if (this.displayPercent !== o.displayPercent) {
-                if (this.displayPercent === true) {
-                    this.container.querySelectorAll('.label__percentage').forEach((label) => {
-                        label.remove();
-                    });
-                } else {
-                    this.container.querySelectorAll('.svg-funnel-js__label').forEach((label, index) => {
-                        const percentage = this.percentages[index];
-                        const percentageValue = document.createElement('div');
-                        percentageValue.setAttribute('class', 'label__percentage');
-
-                        if (percentage !== 100) {
-                            percentageValue.textContent = `${percentage.toString()}%`;
-                            label.appendChild(percentageValue);
-                        }
-                    });
-                }
-            }
-        }
-        if (typeof o.height !== 'undefined') {
-            this.updateHeight(o.height);
-        }
-        if (typeof o.width !== 'undefined') {
-            this.updateWidth(o.width);
-        }
-        if (typeof o.gradientDirection !== 'undefined') {
-            if (o.gradientDirection === 'vertical') {
-                this.gradientMakeVertical();
-            } else if (o.gradientDirection === 'horizontal') {
-                this.gradientMakeHorizontal();
-            }
-        }
-        if (typeof o.direction !== 'undefined') {
-            if (o.direction === 'vertical') {
-                this.makeVertical();
-            } else if (o.direction === 'horizontal') {
-                this.makeHorizontal();
-            }
-        }
-        if (typeof o.data !== 'undefined') {
-            this.updateData(o.data);
-        }
-    }
 }
 
 export default FunnelGraph;

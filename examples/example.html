@@ -56,6 +56,12 @@
     </div>
 
     <script src="../dist/js/funnel-graph.js"></script>
+    <style>
+        .funnel {
+            width: 800px;
+            height: 400px;
+        }
+    </style>
     <script>
         var dataExample1 = {
             colors: ['#FFB178', '#FF3C8E'],
@@ -87,7 +93,7 @@
             container: '.funnel',
             gradientDirection: 'horizontal',
             data: dataExample3,
-            displayPercent: true,
+            displayPercent: false,
             direction: 'horizontal',
             width: 800,
             height: 300,

@@ -2,7 +2,8 @@
   display: inline-block;
   position: relative; }
   .svg-funnel-js svg {
-    display: block; }
+    display: block;
+    margin: auto; }
   .svg-funnel-js .svg-funnel-js__labels {
     position: absolute;
     display: flex;
