@@ -1,15 +1,17 @@
-.svg-funnel-js {
-  display: inline-block;
-  position: relative; }
-  .svg-funnel-js svg {
-    display: block;
-    margin: auto; }
-  .svg-funnel-js .svg-funnel-js__labels {
-    position: absolute;
-    display: flex;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0; }
-  .svg-funnel-js.svg-funnel-js--vertical .svg-funnel-js__labels {
-    flex-direction: column; }
+@import url("https://fonts.googleapis.com/css?family=Open+Sans:400,700");
+.d3-funnel-js {
+  display: block;
+  margin: auto;
+  font-family: "Open Sans", sans-serif; }
+  .d3-funnel-js .label__value {
+    font-size: 24px;
+    fill: #fff;
+    line-height: 18px; }
+  .d3-funnel-js .label__title {
+    font-size: 16px;
+    font-weight: bold;
+    fill: #21ffa2; }
+  .d3-funnel-js .label__percentage {
+    font-size: 16px;
+    font-weight: bold;
+    fill: #9896dc; }

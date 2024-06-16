@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-	<meta charset="UTF-8">
-	<title>SVG Funnel</title>
-	<link rel="stylesheet" type="text/css" href="../dist/css/main.min.css">
+    <meta charset="UTF-8">
+    <title>SVG Funnel</title>
+    <link rel="stylesheet" type="text/css" href="../dist/css/main.min.css">
     <link rel="stylesheet" type="text/css" href="../dist/css/theme.min.css">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" type="image/png" href="favicon.png"/>
+    <link rel="shortcut icon" type="image/png" href="favicon.png" />
     <style>
-        html, body {
+        html,
+        body {
             min-height: 100%;
         }
 
@@ -18,48 +20,69 @@
         }
 
         .funnel {
-            margin: 24px auto;
+            height: auto;
         }
 
         .flex {
             display: flex;
         }
 
+        .row {
+            flex-direction: row;
+        }
+
+        .col {
+            flex-direction: column;
+        }
+
         .method-buttons {
-            display: flex;
-            justify-content: center;
-            margin-top: 48px;
+            align-items: center;
+            justify-content: start;
+            padding: 8px;
         }
 
         button {
-            margin-left: 8px;
-            margin-right: 8px;
+            width: 100px;
+            margin: 4px;
+            padding: 4px;
+        }
+
+        .funnel-wrapper {
+            align-items: center;
+            justify-content: start;
+            width: 100%;
+            height: 100%;
+        }
+
+        .main-wrapper {
+            height: 100vh;
         }
     </style>
 </head>
-<body>
-    <div class="flex">
-        <div class="funnel">
-        </div>
-    </div>
 
-    <div class="method-buttons">
-        <button id="makeVertical">Make Vertical</button>
-        <button id="makeHorizontal">Make Horizontal</button>
-        <button id="toggleDirection">Toggle Direction</button>
-        <button id="gradientMakeVertical">Gradient Make Vertical</button>
-        <button id="gradientMakeHorizontal">Gradient Make Horizontal</button>
-        <button id="gradientToggleDirection">Gradient Toggle Direction</button>
-        <button id="useData1">Use DataSet 1</button>
-        <button id="useData2">Use DataSet 2</button>
-        <button id="useData3">Use DataSet 3</button>
+<body>
+    <div class="main-wrapper flex row">
+        <div class="flex method-buttons col">
+            <button id="makeVertical">Vertical</button>
+            <button id="makeHorizontal">Horizontal</button>
+            <button id="toggleDirection">Toggle Direction</button>
+            <button id="gradientMakeVertical">Vertical Gradient</button>
+            <button id="gradientMakeHorizontal">Horizontal Gradient </button>
+            <button id="gradientToggleDirection">Gradient Toggle Direction</button>
+            <button id="useData1">DataSet 1</button>
+            <button id="useData2">DataSet 2</button>
+            <button id="useData3">DataSet 3</button>
+        </div>
+        <div class="flex funnel-wrapper col">
+            <div class="funnel">
+            </div>
+        </div>
     </div>
 
     <script src="../dist/js/funnel-graph.js"></script>
     <style>
         .funnel {
-            width: 800px;
-            height: 400px;
+         
         }
     </style>
     <script>
@@ -84,19 +107,19 @@
             ],
             values: [
                 [3500, 2500, 6500],
-                [3300, 1400, 1000],
+                [800, 1400, 1000],
                 [600, 200, 130]
             ],
         };
 
         var graph = new FunnelGraph({
             container: '.funnel',
-            gradientDirection: 'horizontal',
+            gradientDirection: 'vertical',
             data: dataExample3,
             displayPercent: false,
-            direction: 'horizontal',
-            width: 800,
-            height: 300,
+            direction: 'vertical',
+            width: 600,
+            height: 400,
             subLabelValue: 'raw'
         });
 
@@ -134,17 +157,18 @@
         });
 
         document.querySelector('#useData1').addEventListener('click', function () {
-          graph.updateData(dataExample1);
+            graph.updateData(dataExample1);
         });
 
         document.querySelector('#useData2').addEventListener('click', function () {
-          graph.updateData(dataExample2);
+            graph.updateData(dataExample2);
         });
 
         document.querySelector('#useData3').addEventListener('click', function () {
-          graph.updateData(dataExample3);
+            graph.updateData(dataExample3);
         });
 
     </script>
 </body>
+
 </html>

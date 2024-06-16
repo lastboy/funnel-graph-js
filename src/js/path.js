@@ -96,6 +96,7 @@ const getCrossAxisPoints = ({
 }) => {
     const points = [];
     const fullDimension = isVertical ? width : height;
+    
     // get half of the graph container height or width, since funnel shape is symmetric
     // we use this when calculating the "A" shape
     const dimension = fullDimension / 2;

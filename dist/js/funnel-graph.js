@@ -5287,42 +5287,254 @@ process.umask = function () {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.rotateSVG = exports.getRootSvgGroup = exports.getRootSvg = exports.getContainer = exports.createRootSVG = exports.applyGradient = void 0;
+exports.getDefaultColors = void 0;
+var defaultColors = ['#FF4589', '#FF5050', '#05DF9D', '#4FF2FD', '#2D9CDB', '#A0BBFF', '#FFD76F', '#F2C94C', '#FF9A9A', '#FFB178'];
+var getDefaultColors = exports.getDefaultColors = function getDefaultColors(number) {
+  var colors = [].concat(defaultColors);
+  var colorSet = [];
+  for (var i = 0; i < number; i++) {
+    // get a random color
+    var index = Math.abs(Math.round(Math.random() * (colors.length - 1)));
+    // push it to the list
+    colorSet.push(colors[index]);
+    // and remove it, so that it is not chosen again
+    colors.splice(index, 1);
+  }
+  return colorSet;
+};
+
+},{}],138:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.updateRootSVG = exports.gradientMakeVertical = exports.gradientMakeHorizontal = exports.getRootSvg = exports.getContainer = exports.drawPaths = exports.drawInfo = exports.createRootSVG = void 0;
 var _d3Selection = require("d3-selection");
 require("d3-transition");
-var _random = _interopRequireDefault(require("./random"));
-function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+/**
+ * Get the main root SVG element
+ */
 var getRootSvg = exports.getRootSvg = function getRootSvg(id) {
   return (0, _d3Selection.select)("#".concat(id));
 };
-var getRootSvgGroup = exports.getRootSvgGroup = function getRootSvgGroup(id) {
-  var _getRootSvg;
-  return (_getRootSvg = getRootSvg(id)) === null || _getRootSvg === void 0 ? void 0 : _getRootSvg.select('g');
+
+/**
+ * Get the graph group [create if not exists]
+ */
+var getRootSvgGroup = function getRootSvgGroup(id, margin) {
+  var svg = getRootSvg(id);
+  var groupId = "".concat(id, "_graph");
+  var group = svg.select("#".concat(groupId));
+  if (group.empty()) {
+    group = svg.append('g').attr('id', groupId);
+    if (margin) {
+      group.attr('transform', "translate(".concat(margin.left, ", ").concat(margin.top, ")"));
+    }
+  }
+  return group;
 };
+
+/**
+ * Get the info group [create if not exists]
+ */
+var getInfoSvgGroup = function getInfoSvgGroup(id, margin) {
+  var svg = getRootSvg(id);
+  var groupId = "".concat(id, "_info");
+  var group = svg.select("#".concat(groupId));
+  if (group.empty()) {
+    group = svg.append('g').attr('id', groupId);
+    if (margin) {
+      // group.attr('transform', `translate(${margin.left}, 0)`);
+    }
+  }
+  return group;
+};
+
+/**
+ * Get he main container div according to the selector
+ */
 var getContainer = exports.getContainer = function getContainer(containerSelector) {
   return (0, _d3Selection.select)(containerSelector);
 };
+
+/**
+ * Create the main SVG element 
+ */
 var createRootSVG = exports.createRootSVG = function createRootSVG(_ref) {
   var id = _ref.id,
     containerSelector = _ref.containerSelector,
-    _ref$axisPointsSize = _ref.axisPointsSize,
-    axisPointsSize = _ref$axisPointsSize === void 0 ? 0 : _ref$axisPointsSize,
-    is2d = _ref.is2d,
-    colors = _ref.colors,
-    gradientDirection = _ref.gradientDirection,
     width = _ref.width,
-    height = _ref.height;
-  var margin = {
-    top: 40,
-    right: 20,
-    bottom: 30,
-    left: 40
-  };
-  var d3Svg = (0, _d3Selection.select)(containerSelector).append('svg').attr('class', 'd3-funnel-js').attr('id', id).style('width', '100%').style('height', '100%').attr('viewBox', "0 0 ".concat(width + margin.left + margin.right, " ").concat(height + margin.top + margin.bottom)).attr('preserveAspectRatio', 'xMidYMin slice');
-  d3Svg.append('g').attr('transform', "translate(".concat(margin.left, ", ").concat(margin.top, ")"));
+    height = _ref.height,
+    margin = _ref.margin;
+  var d3Svg = (0, _d3Selection.select)(containerSelector).append('svg').attr('class', 'd3-funnel-js').attr('id', id).attr('width', width).attr('height', height).attr('viewBox', "0 0 ".concat(width, " ").concat(height)).attr('preserveAspectRatio', 'xMidYMin meet');
+  getRootSvgGroup(id, margin);
   return d3Svg;
 };
-var applyGradient = exports.applyGradient = function applyGradient(id, d3Path, colors, index, gradientDirection) {
+var gradientMakeVertical = exports.gradientMakeVertical = function gradientMakeVertical(_ref2) {
+  var _getRootSvg;
+  var id = _ref2.id;
+  var gradients = (_getRootSvg = getRootSvg(id)) === null || _getRootSvg === void 0 || (_getRootSvg = _getRootSvg.select('defs')) === null || _getRootSvg === void 0 ? void 0 : _getRootSvg.selectAll('linearGradient');
+  if (gradients) {
+    gradients.attr('x1', '0').attr('x2', '0').attr('y1', '0').attr('y2', '1');
+  }
+};
+var gradientMakeHorizontal = exports.gradientMakeHorizontal = function gradientMakeHorizontal(_ref3) {
+  var _getRootSvg2;
+  var id = _ref3.id;
+  var gradients = (_getRootSvg2 = getRootSvg(id)) === null || _getRootSvg2 === void 0 || (_getRootSvg2 = _getRootSvg2.select('defs')) === null || _getRootSvg2 === void 0 ? void 0 : _getRootSvg2.selectAll('linearGradient');
+  if (gradients) {
+    gradients.attr('x1', null).attr('x2', null).attr('y1', null).attr('y2', null);
+  }
+};
+var onEachPathHandler = function onEachPathHandler(_ref4) {
+  var id = _ref4.id,
+    is2d = _ref4.is2d,
+    colors = _ref4.colors,
+    gradientDirection = _ref4.gradientDirection;
+  return function (d, i, nodes) {
+    var d3Path = (0, _d3Selection.select)(nodes[i]);
+    var color = is2d ? colors[i] : colors;
+    var fillMode = typeof color === 'string' || color.length === 1 ? 'solid' : 'gradient';
+    if (fillMode === 'solid') {
+      d3Path.attr('fill', color).attr('stroke', color);
+    } else if (fillMode === 'gradient') {
+      applyGradient(id, d3Path, color, i + 1, gradientDirection);
+    }
+  };
+};
+var drawPaths = exports.drawPaths = function drawPaths(_ref5) {
+  var id = _ref5.id,
+    is2d = _ref5.is2d,
+    colors = _ref5.colors,
+    gradientDirection = _ref5.gradientDirection,
+    definitions = _ref5.definitions;
+  var rootSvg = getRootSvgGroup(id);
+  if (definitions && rootSvg) {
+    var paths = rootSvg.selectAll('path').data(definitions.paths);
+    var pathHandler = onEachPathHandler({
+      id: id,
+      is2d: is2d,
+      colors: colors,
+      gradientDirection: gradientDirection
+    });
+
+    // paths creation
+    var enterPaths = paths.enter().append('path').attr('d', function (d) {
+      return d;
+    }).attr('opacity', 0).each(pathHandler).transition().duration(500).attr('opacity', 1);
+
+    // Update existing paths
+    paths.merge(enterPaths).transition().duration(500).attr('d', function (d) {
+      return d;
+    }).attr('opacity', 1).each(pathHandler);
+
+    // Exit and remove old paths
+    paths.exit().transition().duration(500).attr('opacity', 0).remove();
+  }
+};
+var onEachTextHandler = function onEachTextHandler(_ref6) {
+  var offset = _ref6.offset;
+  return function (d, i) {
+    var padding = 20;
+    var bbox = this.getBBox();
+    offset.value = +(0, _d3Selection.select)(this).attr('y');
+    var newValue = bbox.height / 2 + offset.value + padding;
+    (0, _d3Selection.select)(this).attr('y', newValue);
+    offset.value += bbox.height + padding;
+  };
+};
+var drawInfo = exports.drawInfo = function drawInfo(_ref7) {
+  var id = _ref7.id,
+    info = _ref7.info,
+    width = _ref7.width,
+    height = _ref7.height,
+    margin = _ref7.margin,
+    vertical = _ref7.vertical;
+  if (info) {
+    var textGap = info.length + 1;
+    var noMarginHeight = height - margin.top - margin.bottom;
+    var noMarginWidth = width - margin.left - margin.right;
+    var noMarginSpacing = (!vertical ? noMarginWidth : noMarginHeight) / info.length;
+    var calcTextPos = function calcTextPos(i) {
+      return noMarginSpacing * i + (!vertical ? margin.left : margin.top) + noMarginSpacing / textGap;
+    };
+    getInfoSvgGroup(id, margin).selectAll('g.label__group').data(info).join(function (enter) {
+      var offset = {
+        value: 0
+      };
+      var textHandler = onEachTextHandler({
+        offset: offset
+      });
+      var g = enter.append('g').attr('class', 'label__group');
+      var xHandler = function xHandler(d, i) {
+        return !vertical ? calcTextPos(i) : 0;
+      };
+      var yHandler = function yHandler(d, i) {
+        return !vertical ? 20 : calcTextPos(i);
+      };
+      // Append main value text
+      g.append("text").attr("class", "label__value").attr('x', xHandler).attr('y', yHandler).attr('fill', 'white').text(function (d) {
+        return d.value;
+      });
+      g.append("text").attr("class", "label__title").attr('x', xHandler).attr('y', yHandler).attr('fill', 'white').text(function (d) {
+        return d.label;
+      }).each(textHandler);
+
+      // TODO: add sub label
+      // g.append("text")
+      //     .attr("class", "label__title")
+      //     .attr('x', xHandler)
+      //     .attr('y', yHandler)
+      //     .attr('fill', 'white')
+      //     .text(d => d.subLabel)
+    }, function (update) {
+      return update.each(function (d, i) {
+        var offset = {
+          value: 0
+        };
+        var textHandler = onEachTextHandler({
+          vertical: vertical,
+          offset: offset
+        });
+        var x = !vertical ? calcTextPos(i) : 0;
+        var y = !vertical ? 20 : calcTextPos(i);
+        (0, _d3Selection.select)(this).select(".label__value").attr('x', x).attr('y', y).text(function (d) {
+          return d.value;
+        });
+        (0, _d3Selection.select)(this).select(".label__title").attr('x', x).attr('y', y).text(function (d) {
+          return d.label;
+        }).each(textHandler);
+      });
+    }, function (exit) {
+      return exit.remove();
+    });
+
+    // display graph dividers
+    var infoCopy = info.slice(0, -1);
+    var lines = getInfoSvgGroup(id, margin).selectAll('.divider').data(infoCopy);
+
+    // Enter selection
+    var enterLines = lines.enter().append('line').attr('class', 'divider').attr("".concat(!vertical ? 'x' : 'y', "1"), function (d, i) {
+      return noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top);
+    }).attr("".concat(!vertical ? 'y' : 'x', "1"), function (d, i) {
+      return 0;
+    }).attr("".concat(!vertical ? 'x' : 'y', "2"), function (d, i) {
+      return noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top);
+    }).attr("".concat(!vertical ? 'y' : 'x', "2"), !vertical ? height : width).attr('stroke', 'grey').attr('stroke-width', 1);
+
+    // Update selection
+    lines.merge(enterLines).transition().duration(500).attr("".concat(!vertical ? 'x' : 'y', "1"), function (d, i) {
+      return noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top);
+    }).attr("".concat(!vertical ? 'y' : 'x', "1"), 0).attr("".concat(!vertical ? 'x' : 'y', "2"), function (d, i) {
+      return noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top);
+    }).attr("".concat(!vertical ? 'y' : 'x', "2"), !vertical ? height : width).attr('stroke', 'grey').attr('stroke-width', 1);
+
+    // Exit selection
+    lines.exit().transition().duration(500).attr('stroke-opacity', 0).remove();
+  }
+};
+var applyGradient = function applyGradient(id, d3Path, colors, index, gradientDirection) {
   var gradientId = "funnelGradient-".concat(index);
   var d3Svg = getRootSvgGroup(id);
   var d3Defs = d3Svg.select('defs');
@@ -5353,105 +5565,33 @@ var applyGradient = exports.applyGradient = function applyGradient(id, d3Path, c
   // Apply the gradient to the path
   d3Path.attr('fill', "url(\"#".concat(gradientId, "\")")).attr('stroke', "url(\"#".concat(gradientId, "\")"));
 };
-var rotateSVG = exports.rotateSVG = function rotateSVG(_ref2) {
-  var d3Svg = _ref2.d3Svg,
-    _ref2$rotateTo = _ref2.rotateTo,
-    rotateTo = _ref2$rotateTo === void 0 ? 0 : _ref2$rotateTo,
-    _ref2$rotateFrom = _ref2.rotateFrom,
-    rotateFrom = _ref2$rotateFrom === void 0 ? 0 : _ref2$rotateFrom;
-  var centerX = 0;
-  var centerY = 0;
-  function animateRotation() {
-    d3Svg.transition().duration(1000).attrTween('transform', function () {
-      return function (t) {
-        return "rotate(".concat((1 - t) * rotateFrom + t * rotateTo, " ").concat(centerX, " ").concat(centerY, ")");
-      };
-    }).on('end', function () {});
-  }
-  animateRotation();
-};
-
-},{"./random":142,"d3-selection":52,"d3-transition":106}],138:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.setAttrs = exports.removeAttrs = exports.getDefaultColors = exports.generateLegendBackground = exports.defaultColors = exports.areEqual = void 0;
-function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-var setAttrs = exports.setAttrs = function setAttrs(element, attributes) {
-  if (_typeof(attributes) === 'object') {
-    Object.keys(attributes).forEach(function (key) {
-      element.setAttribute(key, attributes[key]);
-    });
-  }
-};
-var removeAttrs = exports.removeAttrs = function removeAttrs(element) {
-  for (var _len = arguments.length, attributes = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    attributes[_key - 1] = arguments[_key];
-  }
-  attributes.forEach(function (attribute) {
-    element.removeAttribute(attribute);
-  });
-};
-var generateLegendBackground = exports.generateLegendBackground = function generateLegendBackground(color) {
-  var direction = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'horizontal';
-  if (typeof color === 'string') {
-    return "background-color: ".concat(color);
-  }
-  if (color.length === 1) {
-    return "background-color: ".concat(color[0]);
-  }
-  return "background-image: linear-gradient(".concat(direction === 'horizontal' ? 'to right, ' : '').concat(color.join(', '), ")");
-};
-var defaultColors = exports.defaultColors = ['#FF4589', '#FF5050', '#05DF9D', '#4FF2FD', '#2D9CDB', '#A0BBFF', '#FFD76F', '#F2C94C', '#FF9A9A', '#FFB178'];
-var getDefaultColors = exports.getDefaultColors = function getDefaultColors(number) {
-  var colors = [].concat(defaultColors);
-  var colorSet = [];
-  for (var i = 0; i < number; i++) {
-    // get a random color
-    var index = Math.abs(Math.round(Math.random() * (colors.length - 1)));
-    // push it to the list
-    colorSet.push(colors[index]);
-    // and remove it, so that it is not chosen again
-    colors.splice(index, 1);
-  }
-  return colorSet;
-};
-
-/*
-    Used in comparing existing values to value provided on update
-    It is limited to comparing arrays on purpose
-    Name is slightly unusual, in order not to be confused with Lodash method
- */
-var areEqual = exports.areEqual = function areEqual(value, newValue) {
-  // If values are not of the same type
-  var type = Object.prototype.toString.call(value);
-  if (type !== Object.prototype.toString.call(newValue)) return false;
-  if (type !== '[object Array]') return false;
-  if (value.length !== newValue.length) return false;
-  for (var i = 0; i < value.length; i++) {
-    // if the it's a two dimensional array
-    var currentType = Object.prototype.toString.call(value[i]);
-    if (currentType !== Object.prototype.toString.call(newValue[i])) return false;
-    if (currentType === '[object Array]') {
-      // if row lengths are not equal then arrays are not equal
-      if (value[i].length !== newValue[i].length) return false;
-      // compare each element in the row
-      for (var j = 0; j < value[i].length; j++) {
-        if (value[i][j] !== newValue[i][j]) {
-          return false;
-        }
-      }
-    } else if (value[i] !== newValue[i]) {
-      // if it's a one dimensional array element
-      return false;
+var updateRootSVG = exports.updateRootSVG = function updateRootSVG(_ref8) {
+  var id = _ref8.id,
+    width = _ref8.width,
+    height = _ref8.height,
+    rotateFrom = _ref8.rotateFrom,
+    rotateTo = _ref8.rotateTo;
+  var d3Svg = id ? getRootSvg(id) : undefined;
+  if (d3Svg) {
+    var root = d3Svg.transition().duration(1000);
+    if (!isNaN(width) && !isNaN(height)) {
+      d3Svg.attr("width", width);
+      d3Svg.attr("height", height);
+      d3Svg.attr('viewBox', "0 0 ".concat(width, " ").concat(height));
+    }
+    if (!isNaN(rotateTo) && !isNaN(rotateTo)) {
+      var centerX = 0;
+      var centerY = 0;
+      root.attrTween('transform', function () {
+        return function (t) {
+          return "rotate(".concat((1 - t) * rotateFrom + t * rotateTo, " ").concat(centerX, " ").concat(centerY, ")");
+        };
+      }).on('end', function () {});
     }
   }
-  return true;
 };
 
-},{}],139:[function(require,module,exports){
+},{"d3-selection":52,"d3-transition":106}],139:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5459,11 +5599,9 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var _number = require("./number");
-var _graph = require("./graph");
+var _colors = require("./colors");
 var _path = require("./path");
 var _d = require("./d3");
-var _d3Selection = require("d3-selection");
-var _d3Interpolate = require("d3-interpolate");
 var _nanoid = require("nanoid");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
@@ -5480,22 +5618,41 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 var FunnelGraph = /*#__PURE__*/function () {
   function FunnelGraph(options) {
     _classCallCheck(this, FunnelGraph);
-    this.id = (0, _nanoid.nanoid)();
-    this.containerSelector = options.container;
+    this.id = this.getId(), this.containerSelector = options.container;
     this.gradientDirection = options.gradientDirection && options.gradientDirection === 'vertical' ? 'vertical' : 'horizontal';
     this.direction = options.direction && options.direction === 'vertical' ? 'vertical' : 'horizontal';
     this.labels = FunnelGraph.getLabels(options);
     this.subLabels = FunnelGraph.getSubLabels(options);
     this.values = FunnelGraph.getValues(options);
     this.percentages = this.createPercentages();
-    this.colors = options.data.colors || (0, _graph.getDefaultColors)(this.is2d() ? this.getSubDataSize() : 2);
+    this.colors = options.data.colors || (0, _colors.getDefaultColors)(this.is2d() ? this.getSubDataSize() : 2);
     this.displayPercent = options.displayPercent || false;
     this.data = options.data;
-    this.height = options.height;
-    this.width = options.width;
+    this.margin = {
+      top: 120,
+      right: 120,
+      bottom: 120,
+      left: 120
+    };
+    var height = options.height || (0, _d.getContainer)(this.containerSelector).clientHeight;
+    var width = options.width || (0, _d.getContainer)(this.containerSelector).clientWidth;
+    this.height = height;
+    this.width = width;
+    this.origHeight = height;
+    this.origWidth = width;
     this.subLabelValue = options.subLabelValue || 'percent';
+    if (this.isVertical) {
+      this.makeVertical(true);
+    } else {
+      this.makeHorizontal(true);
+    }
   }
   return _createClass(FunnelGraph, [{
+    key: "getId",
+    value: function getId() {
+      return "id_".concat((0, _nanoid.nanoid)());
+    }
+  }, {
     key: "getGraphType",
     value: function getGraphType() {
       return this.values && this.values[0] instanceof Array ? '2d' : 'normal';
@@ -5509,22 +5666,6 @@ var FunnelGraph = /*#__PURE__*/function () {
     key: "isVertical",
     value: function isVertical() {
       return this.direction === 'vertical';
-    }
-  }, {
-    key: "getDataSize",
-    value: function getDataSize() {
-      return this.values.length;
-    }
-  }, {
-    key: "getSubDataSize",
-    value: function getSubDataSize() {
-      return this.values[0].length;
-    }
-  }, {
-    key: "setValues",
-    value: function setValues(v) {
-      this.values = v;
-      return this;
     }
   }, {
     key: "setDirection",
@@ -5544,15 +5685,58 @@ var FunnelGraph = /*#__PURE__*/function () {
       this.width = w;
       return this;
     }
+
+    /**
+     * Get the graph width
+     * 
+     * @param {*} margin included if true or else return the original width
+     * @returns 
+     */
   }, {
     key: "getWidth",
     value: function getWidth() {
-      return this.width || (0, _d.getContainer)(this.containerSelector).clientWidth;
+      var margin = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+      var width = margin ? this.margin.left + this.margin.right : 0;
+      return this.width + width;
     }
+
+    /**
+     * Get the graph height
+     * 
+     * @param {*} margin included if true or else return the original width
+     * @returns 
+     */
   }, {
     key: "getHeight",
     value: function getHeight() {
-      return this.height || (0, _d.getContainer)(this.containerSelector).clientHeight;
+      var margin = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+      var height = margin ? this.margin.top + this.margin.bottom : 0;
+      return this.height + height;
+    }
+
+    /**
+     * Get the margin object { top: , right: , bottom: , left:  }
+     */
+  }, {
+    key: "getMargin",
+    value: function getMargin() {
+      return this.margin;
+    }
+  }, {
+    key: "getDataSize",
+    value: function getDataSize() {
+      return this.values.length;
+    }
+  }, {
+    key: "getSubDataSize",
+    value: function getSubDataSize() {
+      return this.values[0].length;
+    }
+  }, {
+    key: "setValues",
+    value: function setValues(v) {
+      this.values = v;
+      return this;
     }
   }, {
     key: "getValues2d",
@@ -5594,128 +5778,34 @@ var FunnelGraph = /*#__PURE__*/function () {
       });
     }
   }, {
-    key: "drawPaths",
-    value: function drawPaths(_ref) {
-      var _this = this;
-      var crossAxisPoints = _ref.crossAxisPoints;
-      var definitions = (0, _path.getPathDefinitions)({
-        dataSize: this.getDataSize(),
-        isVertical: this.isVertical(),
-        height: this.getHeight(),
-        width: this.getWidth(),
-        crossAxisPoints: crossAxisPoints
-      });
-      var rootSvg = (0, _d.getRootSvgGroup)(this.id);
-      if (definitions && rootSvg) {
-        var paths = rootSvg.selectAll('path').data(definitions.paths);
-
-        // const valuesNum = axisPointsSize - 1;
-
-        // for (let i = 0; i < valuesNum; i++) {
-        //     const d3Path = d3SvgGroup.append('path');
-
-        //     const color = (is2d) ? colors[i] : colors;
-        //     const fillMode = (typeof color === 'string' || color.length === 1) ? 'solid' : 'gradient';
-
-        //     if (fillMode === 'solid') {
-        //         d3Path
-        //             .attr('fill', color)
-        //             .attr('stroke', color);
-
-        //     } else if (fillMode === 'gradient') {
-        //         applyGradient(d3SvgGroup, d3Path, color, i + 1, gradientDirection);
-        //     }
-        // }
-
-        var enterPaths = paths.enter().append('path').attr('d', function (d) {
-          return d;
-        }) // Set initial path data
-        .attr('opacity', 0) // Start with opacity 0 for a fade-in effect
-        .each(function (d, i, nodes) {
-          var d3Path = (0, _d3Selection.select)(nodes[i]);
-          var color = _this.is2d() ? _this.colors[i] : _this.colors;
-          var fillMode = typeof color === 'string' || color.length === 1 ? 'solid' : 'gradient';
-          if (fillMode === 'solid') {
-            d3Path.attr('fill', color).attr('stroke', color);
-          } else if (fillMode === 'gradient') {
-            (0, _d.applyGradient)(_this.id, d3Path, color, i + 1, _this.gradientDirection);
-          }
-        }).transition().duration(500).attr('opacity', 1); // Fade in new paths
-
-        // Update existing paths
-        paths.merge(enterPaths).transition().duration(500).attr('d', function (d) {
-          return d;
-        }) // Update the 'd' attribute
-        .attr('opacity', 1) // Ensure paths are visible
-        .each(function (d, i, nodes) {
-          var d3Path = (0, _d3Selection.select)(nodes[i]);
-          var color = _this.is2d() ? _this.colors[i] : _this.colors;
-          var fillMode = typeof color === 'string' || color.length === 1 ? 'solid' : 'gradient';
-          if (fillMode === 'solid') {
-            d3Path.attr('fill', color).attr('stroke', color);
-          } else if (fillMode === 'gradient') {
-            (0, _d.applyGradient)(_this.id, d3Path, color, i + 1, _this.gradientDirection);
-          }
-        });
-
-        // Exit and remove old paths
-        paths.exit().transition().duration(500).attr('opacity', 0) // Fade out before removing
-        .remove();
-      }
-    }
-  }, {
-    key: "draw",
-    value: function draw() {
-      debugger;
-      var crossAxisPoints = (0, _path.getCrossAxisPoints)({
-        values: this.values,
-        dataSize: this.getDataSize(),
-        subDataSize: this.getSubDataSize(),
-        values2d: this.is2d() ? this.getValues2d() : undefined,
-        percentages2d: this.is2d() ? this.getPercentages2d() : undefined,
-        isVertical: this.isVertical(),
-        height: this.getHeight(),
-        width: this.getWidth(),
-        is2d: this.is2d()
-      });
-      (0, _d.createRootSVG)({
+    key: "makeVertical",
+    value: function makeVertical() {
+      var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+      if (!force && this.direction === 'vertical') return true;
+      this.setDirection('vertical');
+      this.setWidth(this.origHeight);
+      this.setHeight(this.origWidth);
+      (0, _d.updateRootSVG)({
         id: this.id,
-        containerSelector: this.containerSelector,
-        axisPointsSize: (crossAxisPoints === null || crossAxisPoints === void 0 ? void 0 : crossAxisPoints.length) || 0,
-        is2d: this.is2d(),
-        colors: this.colors,
-        gradientDirection: this.gradientDirection,
         width: this.getWidth(),
         height: this.getHeight()
       });
-      this.drawInfo();
-      this.drawPaths({
-        crossAxisPoints: crossAxisPoints
-      });
-    }
-  }, {
-    key: "makeVertical",
-    value: function makeVertical() {
-      if (this.direction === 'vertical') return true;
-      this.direction = 'vertical';
-      (0, _d.rotateSVG)({
-        d3Svg: (0, _d.getRootSvg)(this.id),
-        rotateFrom: 0,
-        rotateTo: 90
-      });
-      return true;
+      this.updateData();
     }
   }, {
     key: "makeHorizontal",
     value: function makeHorizontal() {
-      if (this.direction === 'horizontal') return true;
-      this.direction = 'horizontal';
-      (0, _d.rotateSVG)({
-        d3Svg: (0, _d.getRootSvg)(this.id),
-        rotateFrom: 90,
-        rotateTo: 0
+      var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+      if (!force && this.direction === 'horizontal') return true;
+      this.setDirection('horizontal');
+      this.setWidth(this.origWidth);
+      this.setHeight(this.origHeight);
+      (0, _d.updateRootSVG)({
+        id: this.id,
+        width: this.getWidth(),
+        height: this.getHeight()
       });
-      return true;
+      this.updateData();
     }
   }, {
     key: "toggleDirection",
@@ -5729,29 +5819,25 @@ var FunnelGraph = /*#__PURE__*/function () {
   }, {
     key: "gradientMakeVertical",
     value: function gradientMakeVertical() {
-      var _getRootSvg;
       if (this.gradientDirection === 'vertical') {
         return true;
       }
       this.gradientDirection = 'vertical';
-      var gradients = (_getRootSvg = (0, _d.getRootSvg)(this.id)) === null || _getRootSvg === void 0 || (_getRootSvg = _getRootSvg.select('defs')) === null || _getRootSvg === void 0 ? void 0 : _getRootSvg.selectAll('linearGradient');
-      if (gradients) {
-        gradients.attr('x1', '0').attr('x2', '0').attr('y1', '0').attr('y2', '1');
-      }
+      (0, _d.gradientMakeVertical)({
+        id: this.id
+      });
       return true;
     }
   }, {
     key: "gradientMakeHorizontal",
     value: function gradientMakeHorizontal() {
-      var _getRootSvg2;
       if (this.gradientDirection === 'horizontal') {
         return true;
       }
       this.gradientDirection = 'horizontal';
-      var gradients = (_getRootSvg2 = (0, _d.getRootSvg)(this.id)) === null || _getRootSvg2 === void 0 || (_getRootSvg2 = _getRootSvg2.select('defs')) === null || _getRootSvg2 === void 0 ? void 0 : _getRootSvg2.selectAll('linearGradient');
-      if (gradients) {
-        gradients.attr('x1', null).attr('x2', null).attr('y1', null).attr('y2', null);
-      }
+      (0, _d.gradientMakeHorizontal)({
+        id: this.id
+      });
       return true;
     }
   }, {
@@ -5763,132 +5849,145 @@ var FunnelGraph = /*#__PURE__*/function () {
         this.gradientMakeHorizontal();
       }
     }
+
+    /**
+     * Get the graph information 
+     * 
+     * @returns the information fot the graph object
+     *  {label: , subLabel: , value: , percentage: } 
+     */
   }, {
-    key: "drawInfo",
-    value: function drawInfo() {
-      var _this2 = this;
+    key: "getInfo",
+    value: function getInfo() {
+      var _this = this;
       var data = this.percentages;
-      if (data) {
-        var info = data.map(function (percentage, index) {
-          var infoItem = {
-            label: undefined,
-            subLabel: undefined,
-            value: undefined,
-            percentage: undefined
-          };
+      return data.map(function (percentage, index) {
+        var infoItem = {
+          label: undefined,
+          subLabel: undefined,
+          value: undefined,
+          percentage: undefined
+        };
 
-          // update value 
-          var valueNumber = _this2.is2d() ? _this2.getValues2d()[index] : _this2.values[index];
-          infoItem.value = (0, _number.formatNumber)(valueNumber);
+        // update value 
+        var valueNumber = _this.is2d() ? _this.getValues2d()[index] : _this.values[index];
+        infoItem.value = (0, _number.formatNumber)(valueNumber);
 
-          // update label
-          infoItem.label = _this2.labels[index] || 'NA';
+        // update label
+        infoItem.label = _this.labels[index] || 'NA';
 
-          // update percentage if set to true
-          if (_this2.displayPercent) {
-            infoItem.percentage = "".concat(percentage.toString(), "%");
-          }
-          return infoItem;
-        });
-        var width = this.getWidth();
-        var height = this.getHeight();
-
-        // Calculate the spacing based on the number of labels
-        var gap = 2;
-        var spacing = width / (info.length + gap);
-        (0, _d.getRootSvg)(this.id).selectAll('text.label__title').data(info).join(function (enter) {
-          return enter.append('text').attr('class', 'label__title').attr('x', function (d, i) {
-            return spacing / gap + i * spacing;
-          }).attr('y', 10).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle').attr('fill', 'white').text(function (d) {
-            return d.value;
-          });
-        }, function (update) {
-          return update.attr('x', function (d, i) {
-            return spacing / gap + i * spacing;
-          }).text(function (d) {
-            return d.value;
-          });
-        }, function (exit) {
-          return exit.remove();
-        });
-
-        // Bind data to the 'line' elements
-        var lines = (0, _d.getRootSvg)(this.id).selectAll('.divider').data(info);
-
-        // Enter selection: Handle new data elements that do not yet have corresponding DOM elements
-        var enterLines = lines.enter().append('line').attr('class', 'divider').attr('x1', function (d, i) {
-          return spacing * (i + 1);
-        }).attr('y1', 0).attr('x2', function (d, i) {
-          return spacing * (i + 1);
-        }).attr('y2', height) // Assuming y2 is constant at the height of the SVG
-        .attr('stroke', 'grey').attr('stroke-width', 1);
-
-        // Update selection: Update attributes for existing elements
-        lines.merge(enterLines).transition() // Apply transitions to smoothly update line positions
-        .duration(500).attr('x1', function (d, i) {
-          return spacing * (i + 1);
-        }).attr('y1', 0).attr('x2', function (d, i) {
-          return spacing * (i + 1);
-        }).attr('y2', height).attr('stroke', 'grey').attr('stroke-width', 1);
-
-        // Exit selection: Handle lines that no longer have corresponding data
-        lines.exit().transition().duration(500).attr('stroke-opacity', 0) // Fade out before removing
-        .remove();
-      }
+        // update percentage if set to true
+        if (_this.displayPercent) {
+          infoItem.percentage = "".concat(percentage.toString(), "%");
+        }
+        return infoItem;
+      });
     }
 
-    // @TODO: refactor data update
+    /**
+     * Calculate the paths and draw the svg elements
+     * Get the info and draw the vertical svg lines with the relevant text
+     */
+  }, {
+    key: "drawGraph",
+    value: function drawGraph() {
+      var crossAxisPoints = (0, _path.getCrossAxisPoints)({
+        values: this.values,
+        dataSize: this.getDataSize(),
+        subDataSize: this.getSubDataSize(),
+        values2d: this.is2d() ? this.getValues2d() : undefined,
+        percentages2d: this.is2d() ? this.getPercentages2d() : undefined,
+        isVertical: this.isVertical(),
+        width: this.getWidth(false),
+        height: this.getHeight(false),
+        is2d: this.is2d()
+      });
+      var definitions = (0, _path.getPathDefinitions)({
+        dataSize: this.getDataSize(),
+        isVertical: this.isVertical(),
+        width: this.getWidth(false),
+        height: this.getHeight(false),
+        crossAxisPoints: crossAxisPoints
+      });
+      (0, _d.drawPaths)({
+        id: this.id,
+        is2d: this.is2d(),
+        colors: this.colors,
+        gradientDirection: this.gradientDirection,
+        definitions: definitions
+      });
+      var info = this.getInfo();
+      var margin = this.getMargin();
+      (0, _d.drawInfo)({
+        id: this.id,
+        info: info,
+        width: this.getWidth(),
+        height: this.getHeight(),
+        margin: margin,
+        vertical: this.isVertical()
+      });
+    }
+
+    /**
+     * Create the main SVG and draw the graph
+     */
+  }, {
+    key: "draw",
+    value: function draw() {
+      var width = this.getWidth();
+      var height = this.getHeight();
+      var margin = this.getMargin();
+      (0, _d.createRootSVG)({
+        id: this.id,
+        width: width,
+        height: height,
+        margin: margin,
+        containerSelector: this.containerSelector
+      });
+      this.drawGraph();
+    }
+
+    /**
+     * Redraw the graph and info according to the incoming data changes
+     * 
+     * @param {*} d {
+     *      values: ...
+     *      labels: ...
+     *      subLabels: ...
+     *      colors: ...
+     * }
+     */
   }, {
     key: "updateData",
     value: function updateData(d) {
-      if (typeof d.values !== 'undefined') {
-        // Update values using the predefined function that processes data appropriately
-        this.values = FunnelGraph.getValues({
-          data: d
-        });
-      }
-      if (typeof d.labels !== 'undefined') {
-        // Update labels if specified in the new data
-        this.labels = FunnelGraph.getLabels({
-          data: d
-        });
-      }
-      if (typeof d.colors !== 'undefined') {
-        // Update colors if specified, or use default colors as a fallback
-        this.colors = d.colors || (0, _graph.getDefaultColors)(this.is2d() ? this.getSubDataSize() : 2);
-      }
+      if (d) {
+        if (typeof d.values !== 'undefined') {
+          // Update values
+          this.values = FunnelGraph.getValues({
+            data: d
+          });
+        }
+        if (typeof d.labels !== 'undefined') {
+          // Update labels if specified in the new data
+          this.labels = FunnelGraph.getLabels({
+            data: d
+          });
+        }
+        if (typeof d.colors !== 'undefined') {
+          // Update colors if specified, or use default colors as a fallback
+          this.colors = d.colors || (0, _colors.getDefaultColors)(this.is2d() ? this.getSubDataSize() : 2);
+        }
 
-      // Calculate percentages for the graph based on the updated or existing values
-      this.percentages = this.createPercentages();
-      if (typeof d.subLabels !== 'undefined') {
-        // Update subLabels if specified in the new data
-        this.subLabels = FunnelGraph.getSubLabels({
-          data: d
-        });
+        // Calculate percentages for the graph based on the updated or existing values
+        this.percentages = this.createPercentages();
+        if (typeof d.subLabels !== 'undefined') {
+          // Update subLabels if specified in the new data
+          this.subLabels = FunnelGraph.getSubLabels({
+            data: d
+          });
+        }
       }
-
-      // Redraw the information on the graph to reflect any changes
-      this.drawInfo();
-      if (typeof d.values !== 'undefined') {
-        // Update values using the predefined function that processes data appropriately
-        this.values = FunnelGraph.getValues({
-          data: d
-        });
-        var crossAxisPoints = (0, _path.getCrossAxisPoints)({
-          values: this.values,
-          dataSize: this.getDataSize(),
-          subDataSize: this.getSubDataSize(),
-          values2d: this.is2d() ? this.getValues2d() : undefined,
-          percentages2d: this.is2d() ? this.getPercentages2d() : undefined,
-          isVertical: this.isVertical(),
-          height: this.getHeight(),
-          width: this.getWidth(),
-          is2d: this.is2d()
-        });
-        this.drawPaths({
-          crossAxisPoints: crossAxisPoints
-        }); // Redraw the paths based on the new values
-      }
+      this.drawGraph();
     }
   }], [{
     key: "getSubLabels",
@@ -5926,7 +6025,7 @@ var FunnelGraph = /*#__PURE__*/function () {
 }();
 var _default = exports.default = FunnelGraph;
 
-},{"./d3":137,"./graph":138,"./number":140,"./path":141,"d3-interpolate":33,"d3-selection":52,"nanoid":134}],140:[function(require,module,exports){
+},{"./colors":137,"./d3":138,"./number":140,"./path":141,"nanoid":134}],140:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6044,6 +6143,7 @@ var getCrossAxisPoints = exports.getCrossAxisPoints = function getCrossAxisPoint
     is2d = _ref3.is2d;
   var points = [];
   var fullDimension = isVertical ? width : height;
+
   // get half of the graph container height or width, since funnel shape is symmetric
   // we use this when calculating the "A" shape
   var dimension = fullDimension / 2;
@@ -6155,17 +6255,5 @@ var createVerticalPath = function createVerticalPath(index, X, XNext, Y) {
   return str;
 };
 
-},{"./number":140}],142:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-var generateRandomIdString = function generateRandomIdString(prefix) {
-  return Math.random().toString(36).replace('0.', prefix || '');
-};
-var _default = exports.default = generateRandomIdString;
-
-},{}]},{},[1])(1)
+},{"./number":140}]},{},[1])(1)
 });
