@@ -5431,15 +5431,21 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref5) {
     // paths creation
     var enterPaths = paths.enter().append('path').attr('d', function (d) {
       return d;
-    }).attr('opacity', 0).each(pathHandler).transition().duration(500).attr('opacity', 1);
+    }).attr('opacity', 0).each(pathHandler).transition().delay(function (d, i) {
+      return i * 100;
+    }).duration(1000).ease(_d3Ease.easeCubicInOut);
 
     // Update existing paths
-    paths.merge(enterPaths).transition().duration(500).attr('d', function (d) {
+    paths.merge(enterPaths).transition().delay(function (d, i) {
+      return i * 100;
+    }).duration(1000).ease(_d3Ease.easeCubicInOut).attr('d', function (d) {
       return d;
     }).attr('opacity', 1).each(pathHandler);
 
     // Exit and remove old paths
-    paths.exit().transition().duration(500).attr('opacity', 0).remove();
+    paths.exit().transition().delay(function (d, i) {
+      return i * 100;
+    }).duration(1000).ease(_d3Ease.easeCubicInOut).attr('opacity', 0).remove();
   }
 };
 
@@ -5448,7 +5454,6 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref5) {
  */
 var onEachTextHandler = function onEachTextHandler(_ref6) {
   var offset = _ref6.offset;
-  console.log(offset);
   return function (d, i) {
     var padding = 5;
     var bbox = this.getBBox();

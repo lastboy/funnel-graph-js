@@ -1,6 +1,6 @@
 import { select } from 'd3-selection';
 import 'd3-transition';
-import { easeCircleInOut } from 'd3-ease';
+import { easeCircleInOut, easeCubicInOut } from 'd3-ease';
 
 /**
  * Get the main root SVG element
@@ -147,13 +147,16 @@ const drawPaths = ({
             .attr('opacity', 0)
             .each(pathHandler)
             .transition()
-            .duration(500)
-            .attr('opacity', 1);
+            .delay((d, i) => i * 100)
+            .duration(1000)
+            .ease(easeCubicInOut)
 
         // Update existing paths
         paths.merge(enterPaths)
             .transition()
-            .duration(500)
+            .delay((d, i) => i * 100)
+            .duration(1000)
+            .ease(easeCubicInOut)
             .attr('d', d => d)
             .attr('opacity', 1)
             .each(pathHandler);
@@ -161,7 +164,9 @@ const drawPaths = ({
         // Exit and remove old paths
         paths.exit()
             .transition()
-            .duration(500)
+            .delay((d, i) => i * 100)
+            .duration(1000)
+            .ease(easeCubicInOut)
             .attr('opacity', 0)
             .remove();
     }
@@ -171,8 +176,6 @@ const drawPaths = ({
  * SVG texts positioning according to the selected direction
  */
 const onEachTextHandler = ({ offset }) => {
-
-    console.log(offset)
 
     return function (d, i) {
 
