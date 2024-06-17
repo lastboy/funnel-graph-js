@@ -5312,6 +5312,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.updateRootSVG = exports.gradientMakeVertical = exports.gradientMakeHorizontal = exports.getRootSvg = exports.getContainer = exports.drawPaths = exports.drawInfo = exports.createRootSVG = void 0;
 var _d3Selection = require("d3-selection");
 require("d3-transition");
+var _d3Ease = require("d3-ease");
 /**
  * Get the main root SVG element
  */
@@ -5387,6 +5388,10 @@ var gradientMakeHorizontal = exports.gradientMakeHorizontal = function gradientM
     gradients.attr('x1', null).attr('x2', null).attr('y1', null).attr('y2', null);
   }
 };
+
+/**
+ * Apply the color / gradient to each path
+ */
 var onEachPathHandler = function onEachPathHandler(_ref4) {
   var id = _ref4.id,
     is2d = _ref4.is2d,
@@ -5403,6 +5408,10 @@ var onEachPathHandler = function onEachPathHandler(_ref4) {
     }
   };
 };
+
+/**
+ * Draw the SVG paths
+ */
 var drawPaths = exports.drawPaths = function drawPaths(_ref5) {
   var id = _ref5.id,
     is2d = _ref5.is2d,
@@ -5433,17 +5442,28 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref5) {
     paths.exit().transition().duration(500).attr('opacity', 0).remove();
   }
 };
+
+/**
+ * SVG texts positioning according to the selected direction
+ */
 var onEachTextHandler = function onEachTextHandler(_ref6) {
   var offset = _ref6.offset;
+  console.log(offset);
   return function (d, i) {
-    var padding = 20;
+    var padding = 5;
     var bbox = this.getBBox();
-    offset.value = +(0, _d3Selection.select)(this).attr('y');
-    var newValue = bbox.height / 2 + offset.value + padding;
+    if (!offset.value) {
+      offset.value = +(0, _d3Selection.select)(this).attr('y');
+    }
+    var newValue = bbox.height + offset.value + padding;
     (0, _d3Selection.select)(this).attr('y', newValue);
     offset.value += bbox.height + padding;
   };
 };
+
+/**
+ * Handle the SVG text display on the graph
+ */
 var drawInfo = exports.drawInfo = function drawInfo(_ref7) {
   var id = _ref7.id,
     info = _ref7.info,
@@ -5460,51 +5480,57 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref7) {
       return noMarginSpacing * i + (!vertical ? margin.left : margin.top) + noMarginSpacing / textGap;
     };
     getInfoSvgGroup(id, margin).selectAll('g.label__group').data(info).join(function (enter) {
-      var offset = {
-        value: 0
-      };
-      var textHandler = onEachTextHandler({
-        offset: offset
-      });
-      var g = enter.append('g').attr('class', 'label__group');
-      var xHandler = function xHandler(d, i) {
-        return !vertical ? calcTextPos(i) : 0;
-      };
-      var yHandler = function yHandler(d, i) {
-        return !vertical ? 20 : calcTextPos(i);
-      };
-      // Append main value text
-      g.append("text").attr("class", "label__value").attr('x', xHandler).attr('y', yHandler).attr('fill', 'white').text(function (d) {
-        return d.value;
-      });
-      g.append("text").attr("class", "label__title").attr('x', xHandler).attr('y', yHandler).attr('fill', 'white').text(function (d) {
-        return d.label;
-      }).each(textHandler);
-
-      // TODO: add sub label
-      // g.append("text")
-      //     .attr("class", "label__title")
-      //     .attr('x', xHandler)
-      //     .attr('y', yHandler)
-      //     .attr('fill', 'white')
-      //     .text(d => d.subLabel)
-    }, function (update) {
-      return update.each(function (d, i) {
-        var offset = {
-          value: 0
-        };
-        var textHandler = onEachTextHandler({
-          vertical: vertical,
-          offset: offset
-        });
+      return enter.append("g").attr("class", "label__group").each(function (d, i) {
         var x = !vertical ? calcTextPos(i) : 0;
         var y = !vertical ? 20 : calcTextPos(i);
+        var offsetValue = {
+          value: 0
+        };
+        var textHandlerValue = onEachTextHandler({
+          offset: offsetValue
+        });
+        var g = (0, _d3Selection.select)(this);
+        g.append("text").attr("class", "label__value").attr('x', x).attr('y', y).text(function (d) {
+          return d.value;
+        }).each(textHandlerValue);
+        var textHandlerTitle = onEachTextHandler({
+          offset: offsetValue
+        });
+        g.append("text").attr("class", "label__title").attr('x', x).attr('y', y).text(function (d) {
+          return d.label;
+        }).each(textHandlerTitle);
+        var textHandlerPercentage = onEachTextHandler({
+          offset: offsetValue
+        });
+        g.append("text").attr("class", "label__percentage").attr('x', x).attr('y', y).text(function (d) {
+          return d.percentage;
+        }).each(textHandlerPercentage);
+      });
+    }, function (update) {
+      return update.each(function (d, i) {
+        var x = !vertical ? calcTextPos(i) : 0;
+        var y = !vertical ? 20 : calcTextPos(i);
+        var offsetValue = {
+          value: 0
+        };
+        var textHandlerValue = onEachTextHandler({
+          offset: offsetValue
+        });
         (0, _d3Selection.select)(this).select(".label__value").attr('x', x).attr('y', y).text(function (d) {
           return d.value;
+        }).style('opacity', 0.5).transition().duration(400).ease(_d3Ease.easeCircleInOut).style('opacity', 1).each(textHandlerValue);
+        var textHandlerTitle = onEachTextHandler({
+          offset: offsetValue
         });
         (0, _d3Selection.select)(this).select(".label__title").attr('x', x).attr('y', y).text(function (d) {
           return d.label;
-        }).each(textHandler);
+        }).each(textHandlerTitle);
+        var textHandlerPercentage = onEachTextHandler({
+          offset: offsetValue
+        });
+        (0, _d3Selection.select)(this).select(".label__percentage").attr('x', x).attr('y', y).text(function (d) {
+          return d.percentage;
+        }).each(textHandlerPercentage);
       });
     }, function (exit) {
       return exit.remove();
@@ -5521,14 +5547,14 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref7) {
       return 0;
     }).attr("".concat(!vertical ? 'x' : 'y', "2"), function (d, i) {
       return noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top);
-    }).attr("".concat(!vertical ? 'y' : 'x', "2"), !vertical ? height : width).attr('stroke', 'grey').attr('stroke-width', 1);
+    }).attr("".concat(!vertical ? 'y' : 'x', "2"), !vertical ? height : width);
 
     // Update selection
     lines.merge(enterLines).transition().duration(500).attr("".concat(!vertical ? 'x' : 'y', "1"), function (d, i) {
       return noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top);
     }).attr("".concat(!vertical ? 'y' : 'x', "1"), 0).attr("".concat(!vertical ? 'x' : 'y', "2"), function (d, i) {
       return noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top);
-    }).attr("".concat(!vertical ? 'y' : 'x', "2"), !vertical ? height : width).attr('stroke', 'grey').attr('stroke-width', 1);
+    }).attr("".concat(!vertical ? 'y' : 'x', "2"), !vertical ? height : width);
 
     // Exit selection
     lines.exit().transition().duration(500).attr('stroke-opacity', 0).remove();
@@ -5547,7 +5573,8 @@ var applyGradient = function applyGradient(id, d3Path, colors, index, gradientDi
   if (d3Gradient.empty()) {
     d3Gradient = d3Defs.append('linearGradient').attr('id', gradientId);
   } else {
-    d3Gradient.selectAll('stop').remove(); // Clear existing stops before adding new ones
+    // Clear existing stops before adding new ones
+    d3Gradient.selectAll('stop').remove();
   }
   if (gradientDirection === 'vertical') {
     d3Gradient.attr('x1', '0').attr('y1', '0').attr('x2', '0').attr('y2', '1');
@@ -5565,6 +5592,10 @@ var applyGradient = function applyGradient(id, d3Path, colors, index, gradientDi
   // Apply the gradient to the path
   d3Path.attr('fill', "url(\"#".concat(gradientId, "\")")).attr('stroke', "url(\"#".concat(gradientId, "\")"));
 };
+
+/**
+ * Update the root SVG [demnsions, transform] 
+ */
 var updateRootSVG = exports.updateRootSVG = function updateRootSVG(_ref8) {
   var id = _ref8.id,
     width = _ref8.width,
@@ -5591,7 +5622,7 @@ var updateRootSVG = exports.updateRootSVG = function updateRootSVG(_ref8) {
   }
 };
 
-},{"d3-selection":52,"d3-transition":106}],139:[function(require,module,exports){
+},{"d3-ease":16,"d3-selection":52,"d3-transition":106}],139:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {

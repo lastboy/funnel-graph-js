@@ -19,7 +19,7 @@ const styles = () => {
     const plugins = [autoprefixer(), cssnano()];
 
     return (
-        gulp.src(['./src/scss/main.scss', './src/scss/theme.scss'])
+        gulp.src(['./src/scss/main.scss'])
             .pipe(sass().on('error', sass.logError))
             .pipe(gulp.dest('./dist/css'))
             .pipe(postcss(plugins))

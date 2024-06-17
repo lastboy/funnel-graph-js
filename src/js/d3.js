@@ -1,5 +1,6 @@
 import { select } from 'd3-selection';
 import 'd3-transition';
+import { easeCircleInOut } from 'd3-ease';
 
 /**
  * Get the main root SVG element
@@ -103,6 +104,9 @@ const gradientMakeHorizontal = ({
 
 };
 
+/**
+ * Apply the color / gradient to each path
+ */
 const onEachPathHandler = ({ id, is2d, colors, gradientDirection }) => (d, i, nodes) => {
     const d3Path = select(nodes[i]);
     const color = (is2d) ? colors[i] : colors;
@@ -117,6 +121,9 @@ const onEachPathHandler = ({ id, is2d, colors, gradientDirection }) => (d, i, no
     }
 };
 
+/**
+ * Draw the SVG paths
+ */
 const drawPaths = ({
     id,
     is2d,
@@ -160,17 +167,23 @@ const drawPaths = ({
     }
 }
 
+/**
+ * SVG texts positioning according to the selected direction
+ */
 const onEachTextHandler = ({ offset }) => {
+
+    console.log(offset)
 
     return function (d, i) {
 
-        const padding = 20;
+        const padding = 5;
         const bbox = this.getBBox();
 
-    
-        offset.value = +select(this).attr('y');
-       
-        const newValue =  bbox.height / 2 + offset.value + padding;
+        if (!offset.value){
+            offset.value = +select(this).attr('y');
+        }
+
+        const newValue =  bbox.height + offset.value + padding;
 
         select(this)
             .attr('y', newValue);
@@ -180,6 +193,9 @@ const onEachTextHandler = ({ offset }) => {
     };
 };
 
+/**
+ * Handle the SVG text display on the graph
+ */
 const drawInfo = ({
     id,
     info,
@@ -201,58 +217,77 @@ const drawInfo = ({
             .data(info)
             .join(
                 enter => {
-
-                    const offset = { value: 0 };
-                    const textHandler = onEachTextHandler({ offset });
                     
-                    const g = enter.append('g').attr('class', 'label__group');
-                    const xHandler = (d, i) => !vertical ? calcTextPos(i) : 0;
-                    const yHandler = (d, i) => !vertical ? 20 : calcTextPos(i);
-                    // Append main value text
-                    g.append("text")
-                        .attr("class", "label__value")
-                        .attr('x', xHandler)
-                        .attr('y', yHandler)
-                        .attr('fill', 'white')
-                        .text(d => d.value)
+                    return enter.append("g")
+                        .attr("class", "label__group")
+                        .each(function(d, i) {
+                            const x = !vertical ? calcTextPos(i) : 0;
+                            const y = !vertical ? 20 : calcTextPos(i);
 
-                    g.append("text")
-                        .attr("class", "label__title")
-                        .attr('x', xHandler)
-                        .attr('y', yHandler)
-                        .attr('fill', 'white')
-                        .text(d => d.label)
-                        .each(textHandler);
+                            const offsetValue = { value: 0 };
+                            const textHandlerValue = onEachTextHandler({ offset: offsetValue });
 
-                    // TODO: add sub label
-                    // g.append("text")
-                    //     .attr("class", "label__title")
-                    //     .attr('x', xHandler)
-                    //     .attr('y', yHandler)
-                    //     .attr('fill', 'white')
-                    //     .text(d => d.subLabel)
+                            const g = select(this);
+                            g.append("text")
+                                .attr("class", "label__value")
+                                .attr('x', x)
+                                .attr('y', y)
+                                .text(d => d.value)
+                                .each(textHandlerValue);
+
+                            const textHandlerTitle = onEachTextHandler({ offset: offsetValue });
+                            g.append("text")
+                                .attr("class", "label__title")
+                                .attr('x', x)
+                                .attr('y', y)
+                                .text(d => d.label)
+                                .each(textHandlerTitle);
+
+                            const textHandlerPercentage = onEachTextHandler({ offset: offsetValue });
+                            g.append("text")
+                                .attr("class", "label__percentage")
+                                .attr('x', x)
+                                .attr('y', y)
+                                .text(d => d.percentage)
+                                .each(textHandlerPercentage);
+                        })
+                        
 
                 },
 
                 update => update.each(function (d, i) {
 
-                    const offset = { value: 0 };
-                    const textHandler = onEachTextHandler({ vertical, offset });
-
                     const x = !vertical ? calcTextPos(i) : 0;
                     const y = !vertical ? 20 : calcTextPos(i);
 
+                    const offsetValue = { value: 0 };
+                    const textHandlerValue = onEachTextHandler({ offset: offsetValue });
                     select(this).select(".label__value")
                         .attr('x', x)
                         .attr('y', y)
                         .text(d => d.value)
+                        .style('opacity', 0.5)
 
+                        .transition()
+                        .duration(400)
+                        .ease(easeCircleInOut)
+                        .style('opacity', 1)
+
+                        .each(textHandlerValue);
+
+                    const textHandlerTitle = onEachTextHandler({ offset: offsetValue });
                     select(this).select(".label__title")
                         .attr('x', x)
                         .attr('y', y)
                         .text(d => d.label)
-                        .each(textHandler);
+                        .each(textHandlerTitle);
 
+                    const textHandlerPercentage = onEachTextHandler({ offset: offsetValue });
+                    select(this).select(".label__percentage")
+                        .attr('x', x)
+                        .attr('y', y)
+                        .text(d => d.percentage)
+                        .each(textHandlerPercentage);
 
                 }),
                 exit => exit.remove()
@@ -271,9 +306,7 @@ const drawInfo = ({
             .attr(`${!vertical ? 'x' : 'y'}1`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top)) 
             .attr(`${!vertical ? 'y' : 'x'}1`, (d, i) => 0)
             .attr(`${!vertical ? 'x' : 'y'}2`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top))
-            .attr(`${!vertical ? 'y' : 'x'}2`, !vertical ? height : width)
-            .attr('stroke', 'grey')
-            .attr('stroke-width', 1);
+            .attr(`${!vertical ? 'y' : 'x'}2`, !vertical ? height : width);
 
         // Update selection
         lines.merge(enterLines)
@@ -282,9 +315,7 @@ const drawInfo = ({
             .attr(`${!vertical ? 'x' : 'y'}1`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top) )
             .attr(`${!vertical ? 'y' : 'x'}1`, 0)
             .attr(`${!vertical ? 'x' : 'y'}2`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top) )
-            .attr(`${!vertical ? 'y' : 'x'}2`, !vertical ? height : width)
-            .attr('stroke', 'grey')
-            .attr('stroke-width', 1);
+            .attr(`${!vertical ? 'y' : 'x'}2`, !vertical ? height : width);
 
         // Exit selection
         lines.exit()
@@ -311,7 +342,8 @@ const applyGradient = (id, d3Path, colors, index, gradientDirection) => {
         d3Gradient = d3Defs.append('linearGradient')
             .attr('id', gradientId);
     } else {
-        d3Gradient.selectAll('stop').remove(); // Clear existing stops before adding new ones
+        // Clear existing stops before adding new ones
+        d3Gradient.selectAll('stop').remove(); 
     }
 
     if (gradientDirection === 'vertical') {
@@ -344,6 +376,9 @@ const applyGradient = (id, d3Path, colors, index, gradientDirection) => {
 
 }
 
+/**
+ * Update the root SVG [demnsions, transform] 
+ */
 const updateRootSVG = ({ id, width, height, rotateFrom, rotateTo }) => {
 
     const d3Svg = id ? getRootSvg(id) : undefined;

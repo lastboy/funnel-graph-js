@@ -7,21 +7,31 @@
     margin: auto;
     font-family: "Open Sans", sans-serif;
 
-    .label__value {
-        font-size: 24px;
-        fill: $white;
-        line-height: 18px;
+    .label__group {
+
+        .label__value {
+            font-size: $label-value-font-size;
+            fill: $label-value;
+            line-height: 18px;
+        }
+
+        .label__title {
+            font-size: $label-title-font-size;
+            font-weight: bold;
+            fill: $label-title;
+        }
+
+        .label__percentage {
+            font-size: $label-per-font-size;
+            font-weight: bold;
+            fill: $label-per;
+        }
+
     }
 
-    .label__title {
-        font-size: 16px;
-        font-weight: bold;
-        fill: $value;
+    .divider {
+        stroke: $secondary;
+        stroke-width: 2px;
     }
 
-    .label__percentage {
-        font-size: 16px;
-        font-weight: bold;
-        fill: $secondary;
-    }
 }
