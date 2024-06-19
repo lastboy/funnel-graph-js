@@ -6,26 +6,61 @@ import { getCrossAxisPoints, getPathDefinitions } from './path'
 import { createRootSVG, updateRootSVG, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo } from './d3'
 import { nanoid } from 'nanoid';
 
+/**
+ * Funnel graph class
+ * 
+ * @param options {
+ * 
+ *      container: '.selector'
+ *      width: ...
+ *      height: ...
+ *      labels: ['Impressions', ...],
+ *      subLabels: ['Direct', ...],
+ *      colors: [
+ *          ['#000', ...
+ *      ],
+ *      values: [
+ *          [3500, ...
+ *      ],
+ *      displayPercent: false,
+ *      margin: { ?top, ?right, ?bottom, ?left, text },
+ *      gradientDirection: 'vertical',
+ *      callbacks: {
+ *          'tooltip': () => {},
+ *          'click': () => {}
+ *      }
+ *      displayInfo: false,
+ *      displayOutlines: false
+ * }
+ *  TODO: implement destroy - release listeners
+ *  TODO: update the data in the tooltip and click to the handler - check the remove handler on data change
+ *  TODO: remove text leave lines .. remove lines boolean - on small graph change the text rez or diff display 
+ * TODO: retrieve the text to a callback or some other way
+ */
 class FunnelGraph {
     constructor(options) {
-        this.id = this.getId(),
+
+        this.id = this.generateId(),
             this.containerSelector = options.container;
         this.gradientDirection = (options.gradientDirection && options.gradientDirection === 'vertical')
             ? 'vertical'
             : 'horizontal';
-        this.direction = (options.direction && options.direction === 'vertical') ? 'vertical' : 'horizontal';
-        this.labels = FunnelGraph.getLabels(options);
-        this.subLabels = FunnelGraph.getSubLabels(options);
-        this.values = FunnelGraph.getValues(options);
+
+        this.direction = this.getDirection(options?.direction);
+        this.setLabels(options);
+        this.setSubLabels(options);
+        this.setValues(options);
         this.percentages = this.createPercentages();
         this.colors = options.data.colors || getDefaultColors(this.is2d() ? this.getSubDataSize() : 2);
         this.displayPercent = options.displayPercent || false;
-        this.data = options.data;
 
-        this.margin = { top: 120, right: 120, bottom: 120, left: 120 };
+        this.margin = { top: 100, right: 80, bottom: 80, left: 80, text: 20 };
+        this.setMargin(options?.margin);
 
         let height = options.height || getContainer(this.containerSelector).clientHeight;
         let width = options.width || getContainer(this.containerSelector).clientWidth;
+
+        this.callbacks = options?.callbacks;
 
         this.height = height;
         this.width = width;
@@ -35,7 +70,7 @@ class FunnelGraph {
 
         this.subLabelValue = options.subLabelValue || 'percent';
 
-        if (this.isVertical) {
+        if (this.isVertical()) {
             this.makeVertical(true);
         } else {
             this.makeHorizontal(true)
@@ -43,7 +78,31 @@ class FunnelGraph {
     }
 
     getId() {
+        return this.id;
+    }
+
+    getContainerSelector(){
+        return this.containerSelector;
+    }
+
+    generateId() {
         return `id_${nanoid()}`;
+    }
+
+    getColors() {
+        return this.colors;
+    }
+
+    getGradientDirection() {
+        return this.gradientDirection;
+    }
+
+    getDirection(direction) {
+        if (!direction || (direction && direction !== 'horizontal' && direction !== 'vertical')) {
+            return 'horizontal';
+        }
+
+        return direction;
     }
 
     getGraphType() {
@@ -102,6 +161,12 @@ class FunnelGraph {
         return this.margin;
     }
 
+    setMargin(margin) {
+        if (margin && typeof margin === 'object') {
+            this.margin = { ...this.margin, ...margin };
+        }
+    }
+
     getDataSize() {
         return this.values.length;
     }
@@ -110,47 +175,20 @@ class FunnelGraph {
         return this.values[0].length;
     }
 
-    static getSubLabels(options) {
-        if (!options.data) {
-            throw new Error('Data is missing');
-        }
-
-        const { data } = options;
-
-        if (typeof data.subLabels === 'undefined') return [];
-
-        return data.subLabels;
+    getValues() {
+        return this.values;
     }
 
-    static getLabels(options) {
-        if (!options.data) {
-            throw new Error('Data is missing');
-        }
-
-        const { data } = options;
-
-        if (typeof data.labels === 'undefined') return [];
-
-        return data.labels;
+    getLabels() {
+        return this.labels;
     }
 
-    setValues(v) {
-        this.values = v;
-        return this;
+    getSubLabels() {
+        return this.subLabels;
     }
 
-    static getValues(options) {
-        if (!options.data) {
-            return [];
-        }
-
-        const { data } = options;
-
-        if (typeof data === 'object') {
-            return data.values;
-        }
-
-        return [];
+    getCallBacks() {
+        return this.callbacks;
     }
 
     getValues2d() {
@@ -172,6 +210,42 @@ class FunnelGraph {
         });
 
         return percentages;
+    }
+
+    setSubLabels(options) {
+        if (!options.data) {
+            throw new Error('Data is missing');
+        }
+
+        const { data } = options;
+
+        if (typeof data.subLabels === 'undefined') return [];
+
+        this.subLabels = data.subLabels;
+    }
+
+    setLabels(options) {
+        if (!options.data) {
+            throw new Error('Data is missing');
+        }
+
+        const { data } = options;
+
+        if (typeof data.labels === 'undefined') return [];
+
+        this.labels = data.labels;
+    }
+
+    setValues(options) {
+        let values = [];
+
+        const { data } = options;
+
+        if (typeof data === 'object') {
+            values = data.values;
+        }
+
+        this.values = values;
     }
 
     createPercentages() {
@@ -259,6 +333,21 @@ class FunnelGraph {
     }
 
     /**
+     * Get class context 
+     */
+    getContext() {
+        const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(this))
+          .filter(prop => typeof this[prop] === 'function' && prop !== 'constructor');
+        
+        const boundMethods = {};
+        for (const method of methods) {
+          boundMethods[method] = this[method].bind(this);
+        }
+    
+        return boundMethods;
+      }
+
+    /**
      * Get the graph information 
      * 
      * @returns the information fot the graph object
@@ -294,43 +383,25 @@ class FunnelGraph {
     drawGraph() {
 
         const crossAxisPoints = getCrossAxisPoints({
-            values: this.values,
-            dataSize: this.getDataSize(),
-            subDataSize: this.getSubDataSize(),
-            values2d: this.is2d() ? this.getValues2d() : undefined,
-            percentages2d: this.is2d() ? this.getPercentages2d() : undefined,
-            isVertical: this.isVertical(),
-            width: this.getWidth(false),
-            height: this.getHeight(false),
-            is2d: this.is2d()
+            context: this.getContext()
         });
 
         const definitions = getPathDefinitions({
-            dataSize: this.getDataSize(),
-            isVertical: this.isVertical(),
-            width: this.getWidth(false),
-            height: this.getHeight(false),
+            context: this.getContext(),
             crossAxisPoints
         });
 
         drawPaths({
-            id: this.id,
-            is2d: this.is2d(),
-            colors: this.colors,
-            gradientDirection: this.gradientDirection,
-            definitions
+            context: this.getContext(),
+            definitions,
+          
         });
 
         const info = this.getInfo();
-        const margin = this.getMargin();
 
         drawInfo({
-            id: this.id,
-            info,
-            width: this.getWidth(),
-            height: this.getHeight(),
-            margin,
-            vertical: this.isVertical()
+            context: this.getContext(),
+            info
         });
     }
 
@@ -338,16 +409,8 @@ class FunnelGraph {
      * Create the main SVG and draw the graph
      */
     draw() {
-        const width = this.getWidth();
-        const height = this.getHeight();
-        const margin = this.getMargin();
-
         createRootSVG({
-            id: this.id,
-            width,
-            height,
-            margin,
-            containerSelector: this.containerSelector,
+            context: this.getContext()
         });
 
         this.drawGraph();
@@ -368,12 +431,12 @@ class FunnelGraph {
         if (d) {
             if (typeof d.values !== 'undefined') {
                 // Update values
-                this.values = FunnelGraph.getValues({ data: d });
+                this.setValues({ data: d });
             }
 
             if (typeof d.labels !== 'undefined') {
                 // Update labels if specified in the new data
-                this.labels = FunnelGraph.getLabels({ data: d });
+                this.setLabels({ data: d });
             }
 
             if (typeof d.colors !== 'undefined') {
@@ -386,11 +449,11 @@ class FunnelGraph {
 
             if (typeof d.subLabels !== 'undefined') {
                 // Update subLabels if specified in the new data
-                this.subLabels = FunnelGraph.getSubLabels({ data: d });
+                this.setSubLabels({ data: d });
             }
         }
 
-         this.drawGraph();
+        this.drawGraph();
     }
 }
 

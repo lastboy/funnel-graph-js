@@ -1,13 +1,15 @@
 import { roundPoint } from './number';
 
 const getPathDefinitions = ({
-    dataSize,
-    isVertical,
-    height,
-    width,
+    context,
     crossAxisPoints
 }) => {
    
+    const dataSize = context.getDataSize();
+    const isVertical = context.isVertical();
+    const width = context.getWidth(false);
+    const height = context.getHeight(false);
+
     const valuesNum = crossAxisPoints.length - 1;
     const paths = [];
     for (let i = 0; i < valuesNum; i++) {
@@ -22,7 +24,7 @@ const getPathDefinitions = ({
             });
 
             const d = createVerticalPath(i, X, XNext, Y);
-            paths.push(d);
+            paths.push({ path: d, data: { }});
         } else {
             const X = getMainAxisPoints({
                 dataSize,
@@ -34,66 +36,27 @@ const getPathDefinitions = ({
             const YNext = crossAxisPoints[i + 1];
 
             const d = createPath(i, X, Y, YNext);
-            paths.push(d);
+            paths.push({ path: d, data: { }});
         }
     }
 
     return { paths, crossAxisPoints };
 };
 
-
-/**
-An example of a two-dimensional funnel graph
-#0..................
-                   ...#1................
-                                       ......
-#0********************#1**                    #2.........................#3 (A)
-                          *******************
-                                              #2*************************#3 (B)
-                                              #2+++++++++++++++++++++++++#3 (C)
-                          +++++++++++++++++++
-#0++++++++++++++++++++#1++                    #2-------------------------#3 (D)
-                                       ------
-                   ---#1----------------
-#0-----------------
- Main axis is the primary axis of the graph.
- In a horizontal graph it's the X axis, and Y is the cross axis.
- However we use the names "main" and "cross" axis,
- because in a vertical graph the primary axis is the Y axis
- and the cross axis is the X axis.
- First step of drawing the funnel graph is getting the coordinates of points,
- that are used when drawing the paths.
- There are 4 paths in the example above: A, B, C and D.
- Such funnel has 3 labels and 3 subLabels.
- This means that the main axis has 4 points (number of labels + 1)
- One the ASCII illustrated graph above, those points are illustrated with a # symbol.
-*/
-const getMainAxisPoints = ({
-    dataSize,
-    isVertical,
-    height,
-    width
-}) => {
-    const size = dataSize;
-    const points = [];
-    const fullDimension = isVertical ? height : width;
-    for (let i = 0; i <= size; i++) {
-        points.push(roundPoint(fullDimension * i / size));
-    }
-    return points;
-};
-
 const getCrossAxisPoints = ({
-    values,
-    dataSize,
-    subDataSize,
-    values2d,
-    percentages2d,
-    isVertical,
-    height,
-    width,
-    is2d
+    context
 }) => {
+
+    const values = context.getValues();
+    const dataSize = context.getDataSize();
+    const subDataSize = context.getSubDataSize();
+    const values2d = context.is2d() ? context.getValues2d() : undefined;
+    const percentages2d = context.is2d() ? context.getPercentages2d() : undefined;
+    const isVertical = context.isVertical();
+    const width = context.getWidth(false);
+    const height = context.getHeight(false);
+    const is2d = context.is2d();
+
     const points = [];
     const fullDimension = isVertical ? width : height;
     
@@ -142,6 +105,47 @@ const getCrossAxisPoints = ({
         points.push(points[0].map(point => fullDimension - point));
     }
 
+    return points;
+};
+
+/**
+An example of a two-dimensional funnel graph
+#0..................
+                   ...#1................
+                                       ......
+#0********************#1**                    #2.........................#3 (A)
+                          *******************
+                                              #2*************************#3 (B)
+                                              #2+++++++++++++++++++++++++#3 (C)
+                          +++++++++++++++++++
+#0++++++++++++++++++++#1++                    #2-------------------------#3 (D)
+                                       ------
+                   ---#1----------------
+#0-----------------
+ Main axis is the primary axis of the graph.
+ In a horizontal graph it's the X axis, and Y is the cross axis.
+ However we use the names "main" and "cross" axis,
+ because in a vertical graph the primary axis is the Y axis
+ and the cross axis is the X axis.
+ First step of drawing the funnel graph is getting the coordinates of points,
+ that are used when drawing the paths.
+ There are 4 paths in the example above: A, B, C and D.
+ Such funnel has 3 labels and 3 subLabels.
+ This means that the main axis has 4 points (number of labels + 1)
+ One the ASCII illustrated graph above, those points are illustrated with a # symbol.
+*/
+const getMainAxisPoints = ({
+    dataSize,
+    isVertical,
+    height,
+    width
+}) => {
+    const size = dataSize;
+    const points = [];
+    const fullDimension = isVertical ? height : width;
+    for (let i = 0; i <= size; i++) {
+        points.push(roundPoint(fullDimension * i / size));
+    }
     return points;
 };
 

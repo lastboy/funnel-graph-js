@@ -23,7 +23,7 @@ const styles = () => {
             .pipe(sass().on('error', sass.logError))
             .pipe(gulp.dest('./dist/css'))
             .pipe(postcss(plugins))
-            .pipe(rename({ suffix: '.min' }))
+            .pipe(rename({ basename: 'funnel-graph', suffix: '.min' }))
             .pipe(gulp.dest('./dist/css'))
             .pipe(server.stream())
     );
@@ -49,6 +49,11 @@ const stylesLint = () => gulp.src('./src/scss/**/*.scss')
     .pipe(sasslint())
     .pipe(sasslint.format());
 
+const copyScss = () => {
+    return gulp.src('./src/scss/**/*')
+        .pipe(gulp.dest('./dist/scss'));
+};
+
 const startServer = () => server.init({
     server: {
         baseDir: './'
@@ -59,11 +64,12 @@ const watchHTML = () => gulp.watch('./*.html').on('change', server.reload);
 const watchScripts = () => gulp.watch('./src/js/*.js', gulp.series('scriptsLint', 'scripts'));
 const watchStyles = () => gulp.watch('./src/scss/**/*.scss', gulp.series('stylesLint', 'styles'));
 
-const compile = gulp.parallel(styles, scripts);
+const compile = gulp.parallel(styles, scripts, copyScss);
 const lint = gulp.parallel(scriptsLint, stylesLint);
 const serve = gulp.series(compile, startServer);
 const watch = gulp.series(lint, gulp.parallel(watchHTML, watchScripts, watchStyles));
 const defaultTasks = gulp.parallel(serve, watch);
+const build = gulp.series(lint, compile);
 
 export {
     styles,
@@ -77,7 +83,8 @@ export {
     serve,
     watch,
     compile,
-    lint
+    lint,
+    build
 };
 
 export default defaultTasks;

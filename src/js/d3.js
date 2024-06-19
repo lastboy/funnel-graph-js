@@ -56,10 +56,20 @@ const getContainer = (containerSelector) => {
 /**
  * Create the main SVG element 
  */
-const createRootSVG = ({ id, containerSelector, width, height, margin }) => {
+const createRootSVG = ({ context }) => {
 
-    const d3Svg = select(containerSelector)
+    const id = context.getId();
+    const width = context.getWidth();
+    const height = context.getHeight();
+    const margin = context.getMargin();
+    const containerSelector = context.getContainerSelector()
 
+    const container = select(containerSelector);
+    container.append('div')
+        .attr('id', "d3-funnel-js")
+        .attr('class', 'd3-funnel-js-tooltip')
+
+    const d3Svg = container
         .append('svg')
         .attr('class', 'd3-funnel-js')
         .attr('id', id)
@@ -104,10 +114,76 @@ const gradientMakeHorizontal = ({
 
 };
 
+const mouseInfoHandler = ({ context, handler, metadata }) => function (event) {
+
+    const is2d = context.is2d();
+    const width = context.getWidth(false);
+    const height = context.getHeight(false);
+    const isVertical = context.isVertical();
+
+    const clickPoint = { x: event.offsetX, y: event.offsetY };
+
+    // Determine the area between the lines
+    let areaIndex = linePositions.findIndex((pos, i) => {
+ 
+        if (!isVertical) {
+            return clickPoint.x > pos && clickPoint.x < (linePositions[i + 1] || width);
+        } else {
+            return clickPoint.y > pos && clickPoint.y < (linePositions[i + 1] || height);
+        }
+    });
+
+    // values are -1, 0, ...
+    areaIndex++
+
+    const dataInfoItem = JSON.parse(this.getAttribute('data-info'));
+    let dataInfoItemForArea = {};
+    const dataInfoValues = dataInfoItem?.values || [];
+    const dataInfoLabels = dataInfoItem?.labels || [];
+
+    dataInfoItemForArea = { 
+        value: dataInfoValues?.[areaIndex],
+        label: dataInfoLabels?.[areaIndex],
+    }
+
+
+    metadata = { 
+        ...metadata,
+        ...dataInfoItemForArea
+    };
+
+    handler(event, metadata);
+};
+
+const addMouseEventIfNotExists = ({ context }) => (pathElement, handler, metadata) => {
+
+    const clickEventExists = !!pathElement.on('click');
+    if (!clickEventExists) {
+        pathElement.on('click', mouseInfoHandler({ context, handler}));
+    }
+
+    const overEventExists = !!pathElement.on('mouseover');
+    if (!overEventExists) {
+        pathElement.on('mouseover', mouseInfoHandler({ context, handler, metadata }));
+    }
+}
+
+const removeClickEvent = (pathElement) => {
+    pathElement.on('click', null);
+}
+
 /**
  * Apply the color / gradient to each path
  */
-const onEachPathHandler = ({ id, is2d, colors, gradientDirection }) => (d, i, nodes) => {
+const onEachPathHandler = ({ context }) => (d, i, nodes) => {
+
+    // id, is2d, width, height, isVertical, colors, gradientDirection, callbacks
+
+    const id = context.getId();
+    const is2d = context.is2d();
+    const colors = context.getColors();
+    const gradientDirection = context.getGradientDirection();
+    const callbacks = context.getCallBacks();
     const d3Path = select(nodes[i]);
     const color = (is2d) ? colors[i] : colors;
     const fillMode = (typeof color === 'string' || color.length === 1) ? 'solid' : 'gradient';
@@ -119,31 +195,53 @@ const onEachPathHandler = ({ id, is2d, colors, gradientDirection }) => (d, i, no
     } else if (fillMode === 'gradient') {
         applyGradient(id, d3Path, color, i + 1, gradientDirection);
     }
+
+    if (typeof callbacks?.click === 'function') {
+        const addMouseHandler = addMouseEventIfNotExists({ context }) ;
+        addMouseHandler(d3Path, callbacks.click, { index: i });
+    }
 };
+
+/**
+ * Get the data nfo for each path
+ */
+const getDataInfo = ({ context }) => (d, i) => {
+
+    const is2d = context.is2d();
+    const data = {
+        values: context.getValues(),
+        labels: context.getLabels()
+    };
+    const infoItemValues = is2d ? data.values?.[i] || [] : data.values || [];
+    const infoItemLabels = data.labels || [];
+
+    return `{ "values": ${JSON.stringify(infoItemValues)}, "labels": ${JSON.stringify(infoItemLabels)} }`;
+}
 
 /**
  * Draw the SVG paths
  */
 const drawPaths = ({
-    id,
-    is2d,
-    colors,
-    gradientDirection,
+    context,
     definitions
 }) => {
 
+    const id = context.getId();
     const rootSvg = getRootSvgGroup(id);
+
     if (definitions && rootSvg) {
 
         const paths = rootSvg.selectAll('path')
             .data(definitions.paths);
 
-        const pathHandler = onEachPathHandler({ id, is2d, colors, gradientDirection });
-
+        const pathHandler = onEachPathHandler({ context });
+        const getDataInfoHandler = getDataInfo({ context });
+        
         // paths creation
         const enterPaths = paths.enter()
             .append('path')
-            .attr('d', d => d)
+            .attr('d', d => d.path)
+            .attr('data-info', getDataInfoHandler)
             .attr('opacity', 0)
             .each(pathHandler)
             .transition()
@@ -157,7 +255,8 @@ const drawPaths = ({
             .delay((d, i) => i * 100)
             .duration(1000)
             .ease(easeCubicInOut)
-            .attr('d', d => d)
+            .attr('d', d => d.path)
+            .attr('data-info', getDataInfoHandler)
             .attr('opacity', 1)
             .each(pathHandler);
 
@@ -168,9 +267,18 @@ const drawPaths = ({
             .duration(1000)
             .ease(easeCubicInOut)
             .attr('opacity', 0)
+            .each(function () {
+                const path = select(this);
+                path.on('end', () => {
+                    removeClickEvent(path);
+                });
+            })
             .remove();
+
+        return paths;
     }
 }
+let linePositions = [];
 
 /**
  * SVG texts positioning according to the selected direction
@@ -182,11 +290,11 @@ const onEachTextHandler = ({ offset }) => {
         const padding = 5;
         const bbox = this.getBBox();
 
-        if (!offset.value){
+        if (!offset.value) {
             offset.value = +select(this).attr('y');
         }
 
-        const newValue =  bbox.height + offset.value + padding;
+        const newValue = bbox.height + offset.value + padding;
 
         select(this)
             .attr('y', newValue);
@@ -200,15 +308,17 @@ const onEachTextHandler = ({ offset }) => {
  * Handle the SVG text display on the graph
  */
 const drawInfo = ({
-    id,
-    info,
-    width,
-    height,
-    margin,
-    vertical
+    context,
+    info
 }) => {
 
     if (info) {
+
+        const id = context.getId();
+        const width = context.getWidth();
+        const height = context.getHeight();
+        const margin = context.getMargin();
+        const vertical = context.isVertical();
 
         const textGap = (info.length + 1);
         const noMarginHeight = height - margin.top - margin.bottom;
@@ -220,12 +330,12 @@ const drawInfo = ({
             .data(info)
             .join(
                 enter => {
-                    
+
                     return enter.append("g")
                         .attr("class", "label__group")
-                        .each(function(d, i) {
-                            const x = !vertical ? calcTextPos(i) : 0;
-                            const y = !vertical ? 20 : calcTextPos(i);
+                        .each(function (d, i) {
+                            const x = !vertical ? calcTextPos(i) : margin.text;
+                            const y = !vertical ? margin.text : calcTextPos(i);
 
                             const offsetValue = { value: 0 };
                             const textHandlerValue = onEachTextHandler({ offset: offsetValue });
@@ -254,14 +364,14 @@ const drawInfo = ({
                                 .text(d => d.percentage)
                                 .each(textHandlerPercentage);
                         })
-                        
+
 
                 },
 
                 update => update.each(function (d, i) {
 
-                    const x = !vertical ? calcTextPos(i) : 0;
-                    const y = !vertical ? 20 : calcTextPos(i);
+                    const x = !vertical ? calcTextPos(i) : margin.text;
+                    const y = !vertical ? margin.text : calcTextPos(i);
 
                     const offsetValue = { value: 0 };
                     const textHandlerValue = onEachTextHandler({ offset: offsetValue });
@@ -297,6 +407,15 @@ const drawInfo = ({
             );
 
 
+        // Function to update line positions
+        function updateLinePositions(info, vertical, margin, noMarginSpacing) {
+            linePositions = info.map((d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top));
+            console.log(linePositions);
+        }
+
+        // Update line positions initially
+        updateLinePositions(info, vertical, margin, noMarginSpacing);
+
         // display graph dividers
         const infoCopy = info.slice(0, -1);
         const lines = getInfoSvgGroup(id, margin).selectAll('.divider')
@@ -306,7 +425,7 @@ const drawInfo = ({
         const enterLines = lines.enter()
             .append('line')
             .attr('class', 'divider')
-            .attr(`${!vertical ? 'x' : 'y'}1`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top)) 
+            .attr(`${!vertical ? 'x' : 'y'}1`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top))
             .attr(`${!vertical ? 'y' : 'x'}1`, (d, i) => 0)
             .attr(`${!vertical ? 'x' : 'y'}2`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top))
             .attr(`${!vertical ? 'y' : 'x'}2`, !vertical ? height : width);
@@ -315,9 +434,9 @@ const drawInfo = ({
         lines.merge(enterLines)
             .transition()
             .duration(500)
-            .attr(`${!vertical ? 'x' : 'y'}1`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top) )
+            .attr(`${!vertical ? 'x' : 'y'}1`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top))
             .attr(`${!vertical ? 'y' : 'x'}1`, 0)
-            .attr(`${!vertical ? 'x' : 'y'}2`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top) )
+            .attr(`${!vertical ? 'x' : 'y'}2`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top))
             .attr(`${!vertical ? 'y' : 'x'}2`, !vertical ? height : width);
 
         // Exit selection
@@ -346,7 +465,7 @@ const applyGradient = (id, d3Path, colors, index, gradientDirection) => {
             .attr('id', gradientId);
     } else {
         // Clear existing stops before adding new ones
-        d3Gradient.selectAll('stop').remove(); 
+        d3Gradient.selectAll('stop').remove();
     }
 
     if (gradientDirection === 'vertical') {
