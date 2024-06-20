@@ -56,6 +56,29 @@
         .main-wrapper {
             height: 100vh;
         }
+
+        button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: auto;
+            background-color: #f0f0f0;
+            margin: 0;
+
+            background-color: white; /* White background */
+            border: none; /* Remove borders */
+            color: navy; /* Green text */
+            
+            text-align: center; /* Centered text */
+            text-decoration: none; /* Remove underline */
+            display: inline-block; /* Get the element to line up horizontally */
+            font-size: 12px; /* Increase font size */
+            margin: 4px 2px; /* Add some margin */
+            cursor: pointer; /* Pointer/hand icon */
+            border-radius: 12px; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            transition: background-color 0.3s, box-shadow 0.3s; /* Smooth transitions */
+        }
     </style>
 </head>
 
@@ -71,6 +94,10 @@
             <button id="useData1">DataSet 1</button>
             <button id="useData2">DataSet 2</button>
             <button id="useData3">DataSet 3</button>
+            <button id="hideTooltip">Hide Tooltip</button>
+            <button id="hideDetails">Hide Details</button>
+            <button id="showTooltip">Show Tooltip</button>
+            <button id="showDetails">Show Details</button>
         </div>
         <div class="flex funnel-wrapper col">
             <div class="funnel">
@@ -124,6 +151,10 @@
 
         graph.draw();
 
+        window.addEventListener('beforeunload', () => {
+            graph?.destroy();
+        });
+
         // direction methods
         document.querySelector('#makeVertical').addEventListener('click', function () {
             graph.setWidth(300);
@@ -165,6 +196,18 @@
 
         document.querySelector('#useData3').addEventListener('click', function () {
             graph.updateData(dataExample3);
+        });
+        document.querySelector('#hideTooltip').addEventListener('click', function () {
+            graph.updateData({ tooltip: false});
+        });
+        document.querySelector('#hideDetails').addEventListener('click', function () {
+            graph.updateData({ width: 200, height: 200, details: false, margin: { top: 0, right: 0, bottom: 0, left: 0, text: 0 } });
+        });
+        document.querySelector('#showTooltip').addEventListener('click', function () {
+            graph.updateData({ tooltip: true});
+        });
+        document.querySelector('#showDetails').addEventListener('click', function () {
+            graph.updateData({ width: 600, height: 400, details: true, margin: { top: 100, right: 80, bottom: 80, left: 80, text: 20 } });
         });
 
     </script>

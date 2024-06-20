@@ -1,17 +1,31 @@
 @import url("https://fonts.googleapis.com/css?family=Open+Sans:400,700");
 
 .d3-funnel-js-tooltip {
+    pointer-events: none;
+    font-size: .8em;
+    display: none;
+    align-items: center;
+    justify-content: center;
     position: absolute;
-    width: 200px;
-    height: 200px;
-    opacity: 0.4;
+    white-space: wrap;
+    min-width: 140px;
+    width: auto;
+    height: 30px;
+    transition: opacity 0.2s;
+
+    font-family: $font-family;
+    padding: $tooltip-padding;
+    border-radius: $tooltip-border-radius;
+    border: $tooltip-border;
+    background-color: $tooltip-bg;
+    color: $tooltip;
 }
 
 .d3-funnel-js {
 
     display: block;
     margin: auto;
-    font-family: "Open Sans", sans-serif;
+    font-family: $font-family;
 
     .label__group {
 
@@ -36,8 +50,8 @@
     }
 
     .divider {
-        stroke: $secondary;
-        stroke-width: 2px;
+        stroke: $divider-stroke ;
+        stroke-width: $divider-stroke-width;
     }
 
 }

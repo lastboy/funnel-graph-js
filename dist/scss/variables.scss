@@ -1,3 +1,5 @@
+$font-family: "Open Sans", sans-serif;
+
 // colors
 $primary: #05df9d;
 $secondary: #9896dc;
@@ -7,7 +9,16 @@ $label-value: #fff;
 $label-per: $secondary;
 
 // fonts
-$label-title-font-size: 16px; 
-$label-value-font-size: 24px; 
-$label-per-font-size: 16px; 
+$label-title-font-size: 1em; 
+$label-value-font-size: 1.5em; 
+$label-per-font-size: 1em; 
  
+$tooltip-border: #000000;
+$tooltip-bg: #333333;
+$tooltip: #f0f0f0;
+$tooltip-border: 1px solid #000000;
+$tooltip-border-radius: 5px;
+$tooltip-padding: 4px;
+
+$divider-stroke: $secondary;
+$divider-stroke-width: .1em;

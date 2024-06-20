@@ -3,7 +3,7 @@
 import { roundPoint, formatNumber } from './number';
 import { getDefaultColors } from './colors';
 import { getCrossAxisPoints, getPathDefinitions } from './path'
-import { createRootSVG, updateRootSVG, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo } from './d3'
+import { createRootSVG, updateRootSVG, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo, destroySVG } from './d3'
 import { nanoid } from 'nanoid';
 
 /**
@@ -29,13 +29,10 @@ import { nanoid } from 'nanoid';
  *          'tooltip': () => {},
  *          'click': () => {}
  *      }
- *      displayInfo: false,
- *      displayOutlines: false
+ *      details: false
+ *      tooltip: true
  * }
- *  TODO: implement destroy - release listeners
- *  TODO: update the data in the tooltip and click to the handler - check the remove handler on data change
- *  TODO: remove text leave lines .. remove lines boolean - on small graph change the text rez or diff display 
- * TODO: retrieve the text to a callback or some other way
+ *  TODO: outlines: for two dimensions graph display
  */
 class FunnelGraph {
     constructor(options) {
@@ -46,7 +43,9 @@ class FunnelGraph {
             ? 'vertical'
             : 'horizontal';
 
-        this.direction = this.getDirection(options?.direction);
+        this.setDetails(options.hasOwnProperty('details') ? options.details : true);
+        this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
+        this.getDirection(options?.direction);
         this.setLabels(options);
         this.setSubLabels(options);
         this.setValues(options);
@@ -75,10 +74,31 @@ class FunnelGraph {
         } else {
             this.makeHorizontal(true)
         }
+
+        /**
+         * Helper for the dividers location 
+         * Main use for the tooltip sections over the paths 
+         */ 
+        this.linePositions = [];
+    }
+
+    destroy() {
+        const destroy = destroySVG({ context: this.getContext() });
+        if (destroy) {
+            destroy();
+        }
     }
 
     getId() {
         return this.id;
+    }
+
+    showTooltip() {
+        return this.tooltip;
+    }
+
+    showDetails() {
+        return this.details;
     }
 
     getContainerSelector(){
@@ -119,19 +139,24 @@ class FunnelGraph {
 
     setDirection(d) {
         this.direction = d;
-        return this;
     }
 
     setHeight(h) {
         this.height = h;
-        return this;
+
     }
 
     setWidth(w) {
         this.width = w;
-        return this;
     }
 
+    setTooltip(bool) {
+        this.tooltip = bool;
+    }
+
+    setDetails(bool) {
+        this.details = bool;
+    }
     /**
      * Get the graph width
      * 
@@ -189,6 +214,14 @@ class FunnelGraph {
 
     getCallBacks() {
         return this.callbacks;
+    }
+
+    setLinePositions(position) {
+        this.linePositions = position || [];
+    }
+
+    getLinePositions() {
+        return this.linePositions;
     }
 
     getValues2d() {
@@ -364,7 +397,7 @@ class FunnelGraph {
             infoItem.value = formatNumber(valueNumber);
 
             // update label
-            infoItem.label = this.labels[index] || 'NA';
+            infoItem.label = this.labels?.[index] || 'NA';
 
             // update percentage if set to true
             if (this.displayPercent) {
@@ -424,11 +457,33 @@ class FunnelGraph {
      *      labels: ...
      *      subLabels: ...
      *      colors: ...
+     *      details: ...
+     *      tooltip: ...
      * }
      */
     updateData(d) {
 
         if (d) {
+            if (typeof d.width !== 'undefined') {
+                this.setWidth(d.width);
+            }   
+
+            if (typeof d.height !== 'undefined') {
+                this.setHeight(d.height);
+            }  
+
+            if (typeof d.margin !== 'undefined') {
+                this.setMargin(d.margin);
+            }   
+
+            if (typeof d.details !== 'undefined') {
+                this.setDetails(d.details);
+            }   
+
+            if (typeof d.tooltip !== 'undefined') {
+                this.setTooltip(d.tooltip);
+            }   
+
             if (typeof d.values !== 'undefined') {
                 // Update values
                 this.setValues({ data: d });

@@ -1,6 +1,7 @@
 import { select } from 'd3-selection';
 import 'd3-transition';
 import { easeCircleInOut, easeCubicInOut } from 'd3-ease';
+import { timeout } from 'd3-timer';
 
 /**
  * Get the main root SVG element
@@ -53,6 +54,10 @@ const getContainer = (containerSelector) => {
     return select(containerSelector);
 }
 
+const getTooltipElement = () => {
+    return select(`#d3-funnel-js-tooltip`);
+}
+
 /**
  * Create the main SVG element 
  */
@@ -66,7 +71,7 @@ const createRootSVG = ({ context }) => {
 
     const container = select(containerSelector);
     container.append('div')
-        .attr('id', "d3-funnel-js")
+        .attr('id', "d3-funnel-js-tooltip")
         .attr('class', 'd3-funnel-js-tooltip')
 
     const d3Svg = container
@@ -82,6 +87,44 @@ const createRootSVG = ({ context }) => {
 
     return d3Svg;
 }
+
+
+const updateSVGGroup = (id, margin) => {
+    const group = getRootSvgGroup(id);
+    group?.attr('transform', `translate(${margin.left}, ${margin.top})`);
+};
+
+/**
+ * Update the root SVG [demnsions, transform] 
+ */
+const updateRootSVG = ({ id, width, height, rotateFrom, rotateTo }) => {
+
+    const d3Svg = id ? getRootSvg(id) : undefined;
+
+    if (d3Svg) {
+        const root = d3Svg
+            .transition()
+            .duration(1000)
+
+        if (!isNaN(width) && !isNaN(height)) {
+            d3Svg.attr("width", width);
+            d3Svg.attr("height", height);
+            d3Svg.attr('viewBox', `0 0 ${width} ${height}`);
+        }
+
+        if (!isNaN(rotateTo) && !isNaN(rotateTo)) {
+
+            const centerX = 0;
+            const centerY = 0;
+
+            root.attrTween('transform', () => {
+                return t => `rotate(${(1 - t) * rotateFrom + t * rotateTo} ${centerX} ${centerY})`;
+            })
+                .on('end', () => { });
+
+        }
+    }
+};
 
 const gradientMakeVertical = ({
     id
@@ -114,18 +157,18 @@ const gradientMakeHorizontal = ({
 
 };
 
-const mouseInfoHandler = ({ context, handler, metadata }) => function (event) {
+const mouseInfoHandler = ({ context, handler, metadata, tooltip }) => function (event) {
 
-    const is2d = context.is2d();
     const width = context.getWidth(false);
     const height = context.getHeight(false);
     const isVertical = context.isVertical();
+    const linePositions = context.getLinePositions();
 
     const clickPoint = { x: event.offsetX, y: event.offsetY };
 
     // Determine the area between the lines
     let areaIndex = linePositions.findIndex((pos, i) => {
- 
+
         if (!isVertical) {
             return clickPoint.x > pos && clickPoint.x < (linePositions[i + 1] || width);
         } else {
@@ -146,25 +189,67 @@ const mouseInfoHandler = ({ context, handler, metadata }) => function (event) {
         label: dataInfoLabels?.[areaIndex],
     }
 
-
     metadata = { 
         ...metadata,
         ...dataInfoItemForArea
     };
 
-    handler(event, metadata);
+    if (!tooltip) {
+        handler(event, metadata);
+    }
+
+    return metadata;
 };
 
 const addMouseEventIfNotExists = ({ context }) => (pathElement, handler, metadata) => {
 
-    const clickEventExists = !!pathElement.on('click');
+    const clickEventExists = !!pathElement?.on('click');
     if (!clickEventExists) {
-        pathElement.on('click', mouseInfoHandler({ context, handler}));
+        pathElement?.on('click', mouseInfoHandler({ context, handler}));
+    }
+
+    if (!context.showDetails() || !context.showTooltip()) {
+            pathElement?.on('mouseover', null);
+            pathElement?.on('mousemove', null);
+            pathElement?.on('mouseout', null);
+        return;
     }
 
     const overEventExists = !!pathElement.on('mouseover');
     if (!overEventExists) {
-        pathElement.on('mouseover', mouseInfoHandler({ context, handler, metadata }));
+        let tooltipTimeout;
+
+        function updateTooltip(event) {
+            const mouseHandler = mouseInfoHandler({ context, handler, metadata, tooltip: true }).bind(this);
+            const metadata = mouseHandler(event);
+            if (metadata) {
+                const tooltipElement = getTooltipElement();
+                if (tooltipTimeout) tooltipTimeout.stop();
+                tooltipTimeout = timeout(() => {
+                    tooltipElement
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY + 10) + "px")
+                        .text(`${metadata.label}: ${metadata.value}`)
+                        .style("opacity", "1")
+                        .style("display", "flex");
+                }, 500);
+            }
+        }
+
+        pathElement.on('mouseover', updateTooltip);
+
+        pathElement.on('mousemove', updateTooltip);
+
+        pathElement.on('mouseout', () => {
+
+            if (tooltipTimeout) tooltipTimeout.stop();
+            const tooltipElement = getTooltipElement();
+            tooltipElement
+                .style("opacity", "0")
+                .style("display", "none")
+                .text("");
+            
+        });
     }
 }
 
@@ -175,7 +260,7 @@ const removeClickEvent = (pathElement) => {
 /**
  * Apply the color / gradient to each path
  */
-const onEachPathHandler = ({ context }) => (d, i, nodes) => {
+const onEachPathHandler = ({ context }) => function (d, i, nodes) {
 
     // id, is2d, width, height, isVertical, colors, gradientDirection, callbacks
 
@@ -212,7 +297,7 @@ const getDataInfo = ({ context }) => (d, i) => {
         values: context.getValues(),
         labels: context.getLabels()
     };
-    const infoItemValues = is2d ? data.values?.[i] || [] : data.values || [];
+    const infoItemValues = is2d ? data.values.map(array => array[i]) || [] : data.values || [];
     const infoItemLabels = data.labels || [];
 
     return `{ "values": ${JSON.stringify(infoItemValues)}, "labels": ${JSON.stringify(infoItemLabels)} }`;
@@ -228,6 +313,11 @@ const drawPaths = ({
 
     const id = context.getId();
     const rootSvg = getRootSvgGroup(id);
+    updateRootSVG({
+        id,
+        width: context.getWidth(),
+        height: context.getHeight()
+    })
 
     if (definitions && rootSvg) {
 
@@ -278,7 +368,6 @@ const drawPaths = ({
         return paths;
     }
 }
-let linePositions = [];
 
 /**
  * SVG texts positioning according to the selected direction
@@ -304,6 +393,11 @@ const onEachTextHandler = ({ offset }) => {
     };
 };
 
+// Function to update line positions
+const updateLinePositions = ({ context }) => (info, vertical, margin, noMarginSpacing) => {
+    context.setLinePositions(info.map((d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top)));
+}
+
 /**
  * Handle the SVG text display on the graph
  */
@@ -312,12 +406,20 @@ const drawInfo = ({
     info
 }) => {
 
-    if (info) {
+    const id = context.getId();
+    const margin = context.getMargin();
 
-        const id = context.getId();
+    updateSVGGroup(id, margin);
+
+    if (!context.showDetails()) {
+        getInfoSvgGroup(id, margin).selectAll('g.label__group').remove();
+        getInfoSvgGroup(id, margin).selectAll('.divider').remove();
+        return;
+    }
+
+    if (info) {
         const width = context.getWidth();
         const height = context.getHeight();
-        const margin = context.getMargin();
         const vertical = context.isVertical();
 
         const textGap = (info.length + 1);
@@ -325,6 +427,8 @@ const drawInfo = ({
         const noMarginWidth = width - margin.left - margin.right;
         const noMarginSpacing = (!vertical ? noMarginWidth : noMarginHeight) / (info.length);
         const calcTextPos = (i) => ((noMarginSpacing * i) + (!vertical ? margin.left : margin.top) + (noMarginSpacing / textGap))
+
+        const updateLinePositionsHandler = updateLinePositions({ context });
 
         getInfoSvgGroup(id, margin).selectAll('g.label__group')
             .data(info)
@@ -406,15 +510,8 @@ const drawInfo = ({
                 exit => exit.remove()
             );
 
-
-        // Function to update line positions
-        function updateLinePositions(info, vertical, margin, noMarginSpacing) {
-            linePositions = info.map((d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top));
-            console.log(linePositions);
-        }
-
         // Update line positions initially
-        updateLinePositions(info, vertical, margin, noMarginSpacing);
+        updateLinePositionsHandler(info, vertical, margin, noMarginSpacing);
 
         // display graph dividers
         const infoCopy = info.slice(0, -1);
@@ -445,6 +542,9 @@ const drawInfo = ({
             .duration(500)
             .attr('stroke-opacity', 0)
             .remove();
+    } else {
+        getInfoSvgGroup(id, margin).selectAll('g.label__group').remove();
+        getInfoSvgGroup(id, margin).selectAll('.divider').remove();
     }
 }
 
@@ -498,36 +598,18 @@ const applyGradient = (id, d3Path, colors, index, gradientDirection) => {
 
 }
 
-/**
- * Update the root SVG [demnsions, transform] 
- */
-const updateRootSVG = ({ id, width, height, rotateFrom, rotateTo }) => {
+const destroySVG = ({ context }) => () => {
 
-    const d3Svg = id ? getRootSvg(id) : undefined;
+    const svg = getRootSvg(context.getId());
 
-    if (d3Svg) {
-        const root = d3Svg
-            .transition()
-            .duration(1000)
+    if (svg) {
+        // Stop any ongoing transitions
+        svg.selectAll('*').interrupt();
 
-        if (!isNaN(width) && !isNaN(height)) {
-            d3Svg.attr("width", width);
-            d3Svg.attr("height", height);
-            d3Svg.attr('viewBox', `0 0 ${width} ${height}`);
-        }
-
-        if (!isNaN(rotateTo) && !isNaN(rotateTo)) {
-
-            const centerX = 0;
-            const centerY = 0;
-
-            root.attrTween('transform', () => {
-                return t => `rotate(${(1 - t) * rotateFrom + t * rotateTo} ${centerX} ${centerY})`;
-            })
-                .on('end', () => { });
-
-        }
+        // Remove all SVG elements
+        svg.selectAll('*').remove();
+        svg.remove();
     }
 }
 
-export { createRootSVG, updateRootSVG, getRootSvg, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo };
+export { createRootSVG, updateRootSVG, getRootSvg, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo, destroySVG };
