@@ -21,9 +21,9 @@ New features have been added:
   
 [![Demo](https://i.imgur.com/mmb1xCr.gif)](https://codepen.io/arik-test/pen/KKLZrVe)
 
-## Vue support 
-There's no need to use the Vue in specific project: [vue-funnel-graph-js](https://github.com/greghub/vue-funnel-graph-js)  
-This project is using dynamic data and configuration updates. It is very simple to integrate with any FE JS framework.
+## Support for Vue, React, and Other Frameworks
+There's no need to use the specific Vue project: [vue-funnel-graph-js](https://github.com/greghub/vue-funnel-graph-js)  
+This project supports dynamic data and configuration updates and is very simple to integrate with any front-end JavaScript framework, including Vue, React, and others.
 
 Vue2 Example: https://codepen.io/arik-test/pen/qBGYjyG
 
@@ -33,7 +33,7 @@ Vue2 Example: https://codepen.io/arik-test/pen/qBGYjyG
 npm i d3-funnel-graph
 ```
 
-JS ES6+:
+JS:
 ```js
 import FunnelGraph from 'd3-funnel-graph';
 // or import "d3-funnel-graph/dist/css/funnel-graph.min.css"
@@ -53,7 +53,15 @@ var graph = new FunnelGraph({
     gradientDirection: 'horizontal',
     data: {...},
     displayPercent: true,
-    direction: 'horizontal'
+    direction: 'horizontal',
+    width: 800,
+    height: 300,
+    callbacks: {
+        click: (event, metadata) => {
+            console.log(metadata);
+        }
+    },
+    margin: { top: 120, right: 60, bottom: 60, left: 60, text: 10 }
 });
 
 graph.draw();
@@ -66,16 +74,24 @@ graph.draw();
 * **width** of the chart in pixels (e.g. 600)
 * **height** of the chart in pixels(e.g. 400)
 * **labels** to be displayed on each section (e.g ['Impressions', ...])
-* [TBD] **subLabels** to used in the tooltip for two dimentions chart (e.g. ['Direct', ...])
+* **subLabels** to used in the tooltip for two dimentions chart (e.g. ['Direct', ...])
 * **colors** overrides the defaults [ ['#000', ... ], ]
 * **values** of the graph (e.g. [ [3500, ...], ])
 * **margin** for the info text (e.g { ?top, ?right, ?bottom, ?left, text })
 * **gradientDirection** ('vertical' | 'horizontal')
-* **callbacks** of the user actions 
-        * on path click ( e.g. { 'click': () => {} } )
+* **callbacks** object for handling user actions (e.g. { 'click': () => {} })
+    * **click** callback function for click events
+    * **Signature**: `({ index, value, label, subLabel, sectionIndex }) => {}`
+        * **Parameters**:
+            * **index**: The index of the item that was clicked.
+            * **sectionIndex**: The index of the section that contains the clicked item.
+            * **value**: The value associated with the clicked item.
+            * **label**: The label of the clicked item.
+            * **subLabel**: The sub-label of the clicked item (if applicable).
 * **displayPercent** should be displayed  [true | false],
 * **details** should be displayed [ true | false ]
-* **tooltip** should be displayed [ true | false ]
+* **tooltip** should be displayed [ true | false ]  
+    **Note:** The tooltip display depends on the details display so it can calculate its range according to the dividers.
 
 ## Updatable FunnelGraph configuration
 * width

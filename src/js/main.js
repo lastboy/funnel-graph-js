@@ -5,6 +5,7 @@ import { getDefaultColors } from './colors';
 import { getCrossAxisPoints, getPathDefinitions } from './path'
 import { createRootSVG, updateRootSVG, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo, destroySVG } from './d3'
 import { nanoid } from 'nanoid';
+import { normalizeArray } from "./utils"
 
 /**
  * Funnel graph class
@@ -45,11 +46,11 @@ class FunnelGraph {
         this.setDetails(options.hasOwnProperty('details') ? options.details : true);
         this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
         this.getDirection(options?.direction);
-        this.setLabels(options);
-        this.setSubLabels(options);
-        this.setValues(options);
+        this.setValues(options?.data?.values || []);
+        this.setLabels(options?.data?.labels || []);
+        this.setSubLabels(options?.data?.subLabels || []);
         this.percentages = this.createPercentages();
-        this.colors = options.data.colors || getDefaultColors(this.is2d() ? this.getSubDataSize() : 2);
+        this.colors = options?.data?.colors || getDefaultColors(this.is2d() ? this.getSubDataSize() : 2);
         this.displayPercent = options.displayPercent || false;
 
         this.margin = { top: 120, right: 60, bottom: 60, left: 60, text: 10 };
@@ -196,7 +197,8 @@ class FunnelGraph {
     }
 
     getSubDataSize() {
-        return this.values[0].length;
+        // TODO:
+       return this.values?.[0]?.length || 0;
     }
 
     getValues() {
@@ -226,7 +228,7 @@ class FunnelGraph {
     getValues2d() {
         const values = [];
 
-        this.values.forEach((valueSet) => {
+        (this.values || []).forEach((valueSet) => {
             values.push(valueSet.reduce((sum, value) => sum + value, 0));
         });
 
@@ -244,39 +246,34 @@ class FunnelGraph {
         return percentages;
     }
 
-    setSubLabels(options) {
-        if (!options.data) {
-            throw new Error('Data is missing');
-        }
-
-        const { data } = options;
-
-        if (typeof data.subLabels === 'undefined') return [];
-
-        this.subLabels = data.subLabels;
+    setSubLabels(subLabels) {
+        subLabels = normalizeArray(subLabels)
+        this.subLabels = subLabels;
     }
 
-    setLabels(options) {
-        if (!options.data) {
-            throw new Error('Data is missing');
-        }
+    setLabels(labels) {
+        // if (!options.data) {
+        //     throw new Error('Data is missing');
+        // }
 
-        const { data } = options;
+        // const { data } = options;
 
-        if (typeof data.labels === 'undefined') return [];
+        // if (typeof data.labels === 'undefined') return [];
 
-        this.labels = data.labels;
+        labels = normalizeArray(labels)
+        this.labels = labels; 
     }
 
-    setValues(options) {
-        let values = [];
+    setValues(values) {
+        // let values = [];
 
-        const { data } = options;
+        // const { data } = options;
 
-        if (typeof data === 'object') {
-            values = data.values;
-        }
+        // if (typeof data === 'object') {
+        //     values = data.values;
+        // }
 
+        values = normalizeArray(values)
         this.values = values;
     }
 
@@ -488,12 +485,12 @@ class FunnelGraph {
 
             if (typeof d.values !== 'undefined') {
                 // Update values
-                this.setValues({ data: d });
+                this.setValues([ ...d.values ]);
             }
 
             if (typeof d.labels !== 'undefined') {
                 // Update labels if specified in the new data
-                this.setLabels({ data: d });
+                this.setLabels([ ...d.labels ]);
             }
 
             if (typeof d.colors !== 'undefined') {
@@ -506,7 +503,7 @@ class FunnelGraph {
 
             if (typeof d.subLabels !== 'undefined') {
                 // Update subLabels if specified in the new data
-                this.setSubLabels({ data: d });
+                this.setSubLabels([ ...d.subLabels ]);
             }
         }
 

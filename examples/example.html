@@ -106,6 +106,7 @@
             <button id="useData1">DataSet 1</button>
             <button id="useData2">DataSet 2</button>
             <button id="useData3">DataSet 3</button>
+            <button id="useData4">DataSet 4 (empty)</button>
             <button id="hideTooltip">Hide Tooltip</button>
             <button id="hideDetails">Hide Details</button>
             <button id="showTooltip">Show Tooltip</button>
@@ -119,6 +120,11 @@
 
     <script src="../dist/js/funnel-graph.js"></script>
     <script>
+
+        const emptyExample = {
+            values: []
+        };
+
         const dataExample1 = {
             colors: ['#FFB178', '#FF3C8E'],
             values: [11000, 3000, 240]
@@ -209,6 +215,9 @@
 
         document.querySelector('#useData3').addEventListener('click', function () {
             graph.updateData(dataExample3);
+        });
+        document.querySelector('#useData4').addEventListener('click', function () {
+            graph.updateData(emptyExample);
         });
         document.querySelector('#hideTooltip').addEventListener('click', function () {
             graph.updateData({ tooltip: false });

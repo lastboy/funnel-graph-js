@@ -1,7 +1,7 @@
 import { select } from 'd3-selection';
 import 'd3-transition';
-import { easeCircleInOut, easeCubicInOut } from 'd3-ease';
 import { timeout } from 'd3-timer';
+import { easePolyInOut } from "d3-ease"
 
 /**
  * Get the main root SVG element
@@ -104,6 +104,7 @@ const updateRootSVG = ({ id, width, height, rotateFrom, rotateTo }) => {
     if (d3Svg) {
         const root = d3Svg
             .transition()
+            .delay(500)
             .duration(1000)
 
         if (!isNaN(width) && !isNaN(height)) {
@@ -183,10 +184,14 @@ const mouseInfoHandler = ({ context, handler, metadata, tooltip }) => function (
     let dataInfoItemForArea = {};
     const dataInfoValues = dataInfoItem?.values || [];
     const dataInfoLabels = dataInfoItem?.labels || [];
+    const dataInfoSubLabels = dataInfoItem?.subLabels || [];
+    const index = metadata.hasOwnProperty("index") ? metadata.index : -1;
 
     dataInfoItemForArea = { 
         value: dataInfoValues?.[areaIndex],
         label: dataInfoLabels?.[areaIndex],
+        subLabel:dataInfoSubLabels?.[index],
+        sectionIndex: areaIndex
     }
 
     metadata = { 
@@ -205,7 +210,7 @@ const addMouseEventIfNotExists = ({ context }) => (pathElement, handler, metadat
 
     const clickEventExists = !!pathElement?.on('click');
     if (!clickEventExists) {
-        pathElement?.on('click', mouseInfoHandler({ context, handler}));
+        pathElement?.on('click', mouseInfoHandler({ context, handler, metadata}));
     }
 
     if (!context.showDetails() || !context.showTooltip()) {
@@ -220,16 +225,20 @@ const addMouseEventIfNotExists = ({ context }) => (pathElement, handler, metadat
         let tooltipTimeout;
 
         function updateTooltip(event) {
+            const is2d = context.is2d();
             const mouseHandler = mouseInfoHandler({ context, handler, metadata, tooltip: true }).bind(this);
-            const metadata = mouseHandler(event);
-            if (metadata) {
+            const handlerMetadata = mouseHandler(event);
+            if (handlerMetadata) {
                 const tooltipElement = getTooltipElement();
                 if (tooltipTimeout) tooltipTimeout.stop();
                 tooltipTimeout = timeout(() => {
+                    let label = handlerMetadata.label || "Value";
+                    label = is2d ? handlerMetadata.subLabel || label : label
+                    const tooltipText = `${label}: ${handlerMetadata.value}`;
                     tooltipElement
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY + 10) + "px")
-                        .text(`${metadata.label}: ${metadata.value}`)
+                        .style("left", (event.clientX + 10) + "px")
+                        .style("top", (event.clientY + 10) + "px")
+                        .text(tooltipText)
                         .style("opacity", "1")
                         .style("display", "flex");
                 }, 500);
@@ -295,12 +304,14 @@ const getDataInfo = ({ context }) => (d, i) => {
     const is2d = context.is2d();
     const data = {
         values: context.getValues(),
-        labels: context.getLabels()
+        labels: context.getLabels(),
+        subLabels: context.getSubLabels()
     };
     const infoItemValues = is2d ? data.values.map(array => array[i]) || [] : data.values || [];
     const infoItemLabels = data.labels || [];
+    const infoItemSubLabels = data?.subLabels || [];
 
-    return `{ "values": ${JSON.stringify(infoItemValues)}, "labels": ${JSON.stringify(infoItemLabels)} }`;
+    return `{ "values": ${JSON.stringify(infoItemValues)}, "labels": ${JSON.stringify(infoItemLabels)}, "subLabels": ${JSON.stringify(infoItemSubLabels)} }`;
 }
 
 /**
@@ -333,18 +344,20 @@ const drawPaths = ({
             .attr('d', d => d.path)
             .attr('data-info', getDataInfoHandler)
             .attr('opacity', 0)
-            .each(pathHandler)
             .transition()
+            .ease(easePolyInOut)
             .delay((d, i) => i * 100)
             .duration(1000)
-            .ease(easeCubicInOut)
+            .attr('opacity', 1)
+            .each(pathHandler)
+            
 
         // Update existing paths
         paths.merge(enterPaths)
             .transition()
+            .ease(easePolyInOut)
             .delay((d, i) => i * 100)
             .duration(1000)
-            .ease(easeCubicInOut)
             .attr('d', d => d.path)
             .attr('data-info', getDataInfoHandler)
             .attr('opacity', 1)
@@ -353,9 +366,9 @@ const drawPaths = ({
         // Exit and remove old paths
         paths.exit()
             .transition()
+            .ease(easePolyInOut)
             .delay((d, i) => i * 100)
             .duration(1000)
-            .ease(easeCubicInOut)
             .attr('opacity', 0)
             .each(function () {
                 const path = select(this);
@@ -484,10 +497,9 @@ const drawInfo = ({
                         .attr('y', y)
                         .text(d => d.value)
                         .style('opacity', 0.5)
-
                         .transition()
                         .duration(400)
-                        .ease(easeCircleInOut)
+                        .ease(easePolyInOut)
                         .style('opacity', 1)
 
                         .each(textHandlerValue);

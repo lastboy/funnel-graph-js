@@ -5,13 +5,18 @@ const getPathDefinitions = ({
     crossAxisPoints
 }) => {
 
+    const paths = [];
+
+    if (!crossAxisPoints?.length) {
+        return { paths, crossAxisPoints: [] }
+    }
+
     const dataSize = context.getDataSize();
     const isVertical = context.isVertical();
     const width = context.getWidth(false);
     const height = context.getHeight(false);
-
     const valuesNum = crossAxisPoints.length - 1;
-    const paths = [];
+
     for (let i = 0; i < valuesNum; i++) {
         if (isVertical) {
             const X = crossAxisPoints[i];
@@ -47,7 +52,13 @@ const getCrossAxisPoints = ({
     context
 }) => {
 
+    const points = [];
     const values = context.getValues();
+
+    if (!values?.length) {
+        return points;
+    }
+
     const dataSize = context.getDataSize();
     const subDataSize = context.getSubDataSize();
     const values2d = context.is2d() ? context.getValues2d() : undefined;
@@ -56,8 +67,6 @@ const getCrossAxisPoints = ({
     const width = context.getWidth(false);
     const height = context.getHeight(false);
     const is2d = context.is2d();
-
-    const points = [];
     const fullDimension = isVertical ? width : height;
 
     // get half of the graph container height or width, since funnel shape is symmetric

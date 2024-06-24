@@ -5312,8 +5312,8 @@ Object.defineProperty(exports, "__esModule", {
 exports.updateRootSVG = exports.gradientMakeVertical = exports.gradientMakeHorizontal = exports.getRootSvg = exports.getContainer = exports.drawPaths = exports.drawInfo = exports.destroySVG = exports.createRootSVG = void 0;
 var _d3Selection = require("d3-selection");
 require("d3-transition");
-var _d3Ease = require("d3-ease");
 var _d3Timer = require("d3-timer");
+var _d3Ease = require("d3-ease");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
@@ -5401,7 +5401,7 @@ var updateRootSVG = exports.updateRootSVG = function updateRootSVG(_ref2) {
     rotateTo = _ref2.rotateTo;
   var d3Svg = id ? getRootSvg(id) : undefined;
   if (d3Svg) {
-    var root = d3Svg.transition().duration(1000);
+    var root = d3Svg.transition().delay(500).duration(1000);
     if (!isNaN(width) && !isNaN(height)) {
       d3Svg.attr("width", width);
       d3Svg.attr("height", height);
@@ -5464,9 +5464,13 @@ var mouseInfoHandler = function mouseInfoHandler(_ref5) {
     var dataInfoItemForArea = {};
     var dataInfoValues = (dataInfoItem === null || dataInfoItem === void 0 ? void 0 : dataInfoItem.values) || [];
     var dataInfoLabels = (dataInfoItem === null || dataInfoItem === void 0 ? void 0 : dataInfoItem.labels) || [];
+    var dataInfoSubLabels = (dataInfoItem === null || dataInfoItem === void 0 ? void 0 : dataInfoItem.subLabels) || [];
+    var index = metadata.hasOwnProperty("index") ? metadata.index : -1;
     dataInfoItemForArea = {
       value: dataInfoValues === null || dataInfoValues === void 0 ? void 0 : dataInfoValues[areaIndex],
-      label: dataInfoLabels === null || dataInfoLabels === void 0 ? void 0 : dataInfoLabels[areaIndex]
+      label: dataInfoLabels === null || dataInfoLabels === void 0 ? void 0 : dataInfoLabels[areaIndex],
+      subLabel: dataInfoSubLabels === null || dataInfoSubLabels === void 0 ? void 0 : dataInfoSubLabels[index],
+      sectionIndex: areaIndex
     };
     metadata = _objectSpread(_objectSpread({}, metadata), dataInfoItemForArea);
     if (!tooltip) {
@@ -5482,7 +5486,8 @@ var addMouseEventIfNotExists = function addMouseEventIfNotExists(_ref6) {
     if (!clickEventExists) {
       pathElement === null || pathElement === void 0 || pathElement.on('click', mouseInfoHandler({
         context: context,
-        handler: handler
+        handler: handler,
+        metadata: metadata
       }));
     }
     if (!context.showDetails() || !context.showTooltip()) {
@@ -5494,18 +5499,22 @@ var addMouseEventIfNotExists = function addMouseEventIfNotExists(_ref6) {
     var overEventExists = !!pathElement.on('mouseover');
     if (!overEventExists) {
       var updateTooltip = function updateTooltip(event) {
+        var is2d = context.is2d();
         var mouseHandler = mouseInfoHandler({
           context: context,
           handler: handler,
           metadata: metadata,
           tooltip: true
         }).bind(this);
-        var metadata = mouseHandler(event);
-        if (metadata) {
+        var handlerMetadata = mouseHandler(event);
+        if (handlerMetadata) {
           var tooltipElement = getTooltipElement();
           if (tooltipTimeout) tooltipTimeout.stop();
           tooltipTimeout = (0, _d3Timer.timeout)(function () {
-            tooltipElement.style("left", event.pageX + 10 + "px").style("top", event.pageY + 10 + "px").text("".concat(metadata.label, ": ").concat(metadata.value)).style("opacity", "1").style("display", "flex");
+            var label = handlerMetadata.label || "Value";
+            label = is2d ? handlerMetadata.subLabel || label : label;
+            var tooltipText = "".concat(label, ": ").concat(handlerMetadata.value);
+            tooltipElement.style("left", event.clientX + 10 + "px").style("top", event.clientY + 10 + "px").text(tooltipText).style("opacity", "1").style("display", "flex");
           }, 500);
         }
       };
@@ -5565,13 +5574,15 @@ var getDataInfo = function getDataInfo(_ref8) {
     var is2d = context.is2d();
     var data = {
       values: context.getValues(),
-      labels: context.getLabels()
+      labels: context.getLabels(),
+      subLabels: context.getSubLabels()
     };
     var infoItemValues = is2d ? data.values.map(function (array) {
       return array[i];
     }) || [] : data.values || [];
     var infoItemLabels = data.labels || [];
-    return "{ \"values\": ".concat(JSON.stringify(infoItemValues), ", \"labels\": ").concat(JSON.stringify(infoItemLabels), " }");
+    var infoItemSubLabels = (data === null || data === void 0 ? void 0 : data.subLabels) || [];
+    return "{ \"values\": ".concat(JSON.stringify(infoItemValues), ", \"labels\": ").concat(JSON.stringify(infoItemLabels), ", \"subLabels\": ").concat(JSON.stringify(infoItemSubLabels), " }");
   };
 };
 
@@ -5600,21 +5611,21 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref9) {
     // paths creation
     var enterPaths = paths.enter().append('path').attr('d', function (d) {
       return d.path;
-    }).attr('data-info', getDataInfoHandler).attr('opacity', 0).each(pathHandler).transition().delay(function (d, i) {
+    }).attr('data-info', getDataInfoHandler).attr('opacity', 0).transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
       return i * 100;
-    }).duration(1000).ease(_d3Ease.easeCubicInOut);
+    }).duration(1000).attr('opacity', 1).each(pathHandler);
 
     // Update existing paths
-    paths.merge(enterPaths).transition().delay(function (d, i) {
+    paths.merge(enterPaths).transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
       return i * 100;
-    }).duration(1000).ease(_d3Ease.easeCubicInOut).attr('d', function (d) {
+    }).duration(1000).attr('d', function (d) {
       return d.path;
     }).attr('data-info', getDataInfoHandler).attr('opacity', 1).each(pathHandler);
 
     // Exit and remove old paths
-    paths.exit().transition().delay(function (d, i) {
+    paths.exit().transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
       return i * 100;
-    }).duration(1000).ease(_d3Ease.easeCubicInOut).attr('opacity', 0).each(function () {
+    }).duration(1000).attr('opacity', 0).each(function () {
       var path = (0, _d3Selection.select)(this);
       path.on('end', function () {
         removeClickEvent(path);
@@ -5718,7 +5729,7 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref12) {
         });
         (0, _d3Selection.select)(this).select(".label__value").attr('x', x).attr('y', y).text(function (d) {
           return d.value;
-        }).style('opacity', 0.5).transition().duration(400).ease(_d3Ease.easeCircleInOut).style('opacity', 1).each(textHandlerValue);
+        }).style('opacity', 0.5).transition().duration(400).ease(_d3Ease.easePolyInOut).style('opacity', 1).each(textHandlerValue);
         var textHandlerTitle = onEachTextHandler({
           offset: offsetValue
         });
@@ -5825,6 +5836,7 @@ var _colors = require("./colors");
 var _path = require("./path");
 var _d = require("./d3");
 var _nanoid = require("nanoid");
+var _utils = require("./utils");
 function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
@@ -5870,17 +5882,18 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
  */
 var FunnelGraph = /*#__PURE__*/function () {
   function FunnelGraph(options) {
+    var _options$data, _options$data2, _options$data3, _options$data4;
     _classCallCheck(this, FunnelGraph);
     this.id = this.generateId(), this.containerSelector = options.container;
     this.gradientDirection = options.gradientDirection && options.gradientDirection === 'vertical' ? 'vertical' : 'horizontal';
     this.setDetails(options.hasOwnProperty('details') ? options.details : true);
     this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
     this.getDirection(options === null || options === void 0 ? void 0 : options.direction);
-    this.setLabels(options);
-    this.setSubLabels(options);
-    this.setValues(options);
+    this.setValues((options === null || options === void 0 || (_options$data = options.data) === null || _options$data === void 0 ? void 0 : _options$data.values) || []);
+    this.setLabels((options === null || options === void 0 || (_options$data2 = options.data) === null || _options$data2 === void 0 ? void 0 : _options$data2.labels) || []);
+    this.setSubLabels((options === null || options === void 0 || (_options$data3 = options.data) === null || _options$data3 === void 0 ? void 0 : _options$data3.subLabels) || []);
     this.percentages = this.createPercentages();
-    this.colors = options.data.colors || (0, _colors.getDefaultColors)(this.is2d() ? this.getSubDataSize() : 2);
+    this.colors = (options === null || options === void 0 || (_options$data4 = options.data) === null || _options$data4 === void 0 ? void 0 : _options$data4.colors) || (0, _colors.getDefaultColors)(this.is2d() ? this.getSubDataSize() : 2);
     this.displayPercent = options.displayPercent || false;
     this.margin = {
       top: 120,
@@ -6054,7 +6067,9 @@ var FunnelGraph = /*#__PURE__*/function () {
   }, {
     key: "getSubDataSize",
     value: function getSubDataSize() {
-      return this.values[0].length;
+      var _this$values;
+      // TODO:
+      return ((_this$values = this.values) === null || _this$values === void 0 || (_this$values = _this$values[0]) === null || _this$values === void 0 ? void 0 : _this$values.length) || 0;
     }
   }, {
     key: "getValues",
@@ -6090,7 +6105,7 @@ var FunnelGraph = /*#__PURE__*/function () {
     key: "getValues2d",
     value: function getValues2d() {
       var values = [];
-      this.values.forEach(function (valueSet) {
+      (this.values || []).forEach(function (valueSet) {
         values.push(valueSet.reduce(function (sum, value) {
           return sum + value;
         }, 0));
@@ -6113,32 +6128,36 @@ var FunnelGraph = /*#__PURE__*/function () {
     }
   }, {
     key: "setSubLabels",
-    value: function setSubLabels(options) {
-      if (!options.data) {
-        throw new Error('Data is missing');
-      }
-      var data = options.data;
-      if (typeof data.subLabels === 'undefined') return [];
-      this.subLabels = data.subLabels;
+    value: function setSubLabels(subLabels) {
+      subLabels = (0, _utils.normalizeArray)(subLabels);
+      this.subLabels = subLabels;
     }
   }, {
     key: "setLabels",
-    value: function setLabels(options) {
-      if (!options.data) {
-        throw new Error('Data is missing');
-      }
-      var data = options.data;
-      if (typeof data.labels === 'undefined') return [];
-      this.labels = data.labels;
+    value: function setLabels(labels) {
+      // if (!options.data) {
+      //     throw new Error('Data is missing');
+      // }
+
+      // const { data } = options;
+
+      // if (typeof data.labels === 'undefined') return [];
+
+      labels = (0, _utils.normalizeArray)(labels);
+      this.labels = labels;
     }
   }, {
     key: "setValues",
-    value: function setValues(options) {
-      var values = [];
-      var data = options.data;
-      if (_typeof(data) === 'object') {
-        values = data.values;
-      }
+    value: function setValues(values) {
+      // let values = [];
+
+      // const { data } = options;
+
+      // if (typeof data === 'object') {
+      //     values = data.values;
+      // }
+
+      values = (0, _utils.normalizeArray)(values);
       this.values = values;
     }
   }, {
@@ -6362,15 +6381,11 @@ var FunnelGraph = /*#__PURE__*/function () {
         }
         if (typeof d.values !== 'undefined') {
           // Update values
-          this.setValues({
-            data: d
-          });
+          this.setValues(_toConsumableArray(d.values));
         }
         if (typeof d.labels !== 'undefined') {
           // Update labels if specified in the new data
-          this.setLabels({
-            data: d
-          });
+          this.setLabels(_toConsumableArray(d.labels));
         }
         if (typeof d.colors !== 'undefined') {
           // Update colors if specified, or use default colors as a fallback
@@ -6381,9 +6396,7 @@ var FunnelGraph = /*#__PURE__*/function () {
         this.percentages = this.createPercentages();
         if (typeof d.subLabels !== 'undefined') {
           // Update subLabels if specified in the new data
-          this.setSubLabels({
-            data: d
-          });
+          this.setSubLabels(_toConsumableArray(d.subLabels));
         }
       }
       this.drawGraph();
@@ -6392,7 +6405,7 @@ var FunnelGraph = /*#__PURE__*/function () {
 }();
 var _default = exports.default = FunnelGraph;
 
-},{"./colors":137,"./d3":138,"./number":140,"./path":141,"nanoid":134}],140:[function(require,module,exports){
+},{"./colors":137,"./d3":138,"./number":140,"./path":141,"./utils":142,"nanoid":134}],140:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6423,12 +6436,18 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
 var getPathDefinitions = exports.getPathDefinitions = function getPathDefinitions(_ref) {
   var context = _ref.context,
     crossAxisPoints = _ref.crossAxisPoints;
+  var paths = [];
+  if (!(crossAxisPoints !== null && crossAxisPoints !== void 0 && crossAxisPoints.length)) {
+    return {
+      paths: paths,
+      crossAxisPoints: []
+    };
+  }
   var dataSize = context.getDataSize();
   var isVertical = context.isVertical();
   var width = context.getWidth(false);
   var height = context.getHeight(false);
   var valuesNum = crossAxisPoints.length - 1;
-  var paths = [];
   for (var i = 0; i < valuesNum; i++) {
     if (isVertical) {
       var X = crossAxisPoints[i];
@@ -6467,7 +6486,11 @@ var getPathDefinitions = exports.getPathDefinitions = function getPathDefinition
 };
 var getCrossAxisPoints = exports.getCrossAxisPoints = function getCrossAxisPoints(_ref2) {
   var context = _ref2.context;
+  var points = [];
   var values = context.getValues();
+  if (!(values !== null && values !== void 0 && values.length)) {
+    return points;
+  }
   var dataSize = context.getDataSize();
   var subDataSize = context.getSubDataSize();
   var values2d = context.is2d() ? context.getValues2d() : undefined;
@@ -6476,7 +6499,6 @@ var getCrossAxisPoints = exports.getCrossAxisPoints = function getCrossAxisPoint
   var width = context.getWidth(false);
   var height = context.getHeight(false);
   var is2d = context.is2d();
-  var points = [];
   var fullDimension = isVertical ? width : height;
 
   // get half of the graph container height or width, since funnel shape is symmetric
@@ -6630,5 +6652,32 @@ var createVerticalPath = function createVerticalPath(index, X, XNext, Y) {
   return str;
 };
 
-},{"./number":140}]},{},[1])(1)
+},{"./number":140}],142:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.normalizeArray = void 0;
+var _normalizeArray = function _normalizeArray(arr) {
+  // Helper function to check if a single cell is considered empty
+  var isEmpty = function isEmpty(el) {
+    return Array.isArray(el) ? _normalizeArray(el) : el === null || el === undefined;
+  };
+
+  // Check if every cell in the array is empty
+  return Array.isArray(arr) && arr.every(isEmpty);
+};
+var normalizeArray = exports.normalizeArray = function normalizeArray(arr) {
+  // If the array is empty, return an empty array
+  var nArray = [];
+  try {
+    nArray = _normalizeArray(arr) ? [] : arr;
+  } catch (e) {
+    console.warn("normalizing array function failed with errors: ", e);
+  }
+  return nArray;
+};
+
+},{}]},{},[1])(1)
 });
