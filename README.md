@@ -27,6 +27,12 @@ This project supports dynamic data and configuration updates and is very simple 
 
 Vue2 Example: https://codepen.io/arik-test/pen/qBGYjyG
 
+## Build
+```
+> yarn
+> yarn build 
+```
+
 ## Installation
 
 ```
@@ -92,6 +98,8 @@ graph.draw();
 * **details** should be displayed [ true | false ]
 * **tooltip** should be displayed [ true | false ]  
     **Note:** The tooltip display depends on the details display so it can calculate its range according to the dividers.
+* **responsive** when true the SVG's width and height will be set to 100%. And the configured width and height will be set in the viewBox.
+    Make sure to set the parent DIVs elements to be 100% as well for resized graph
 
 ## Updatable FunnelGraph configuration
 * width
@@ -127,3 +135,8 @@ JS:
 ```html
 <script src="../dist/js/funnel-graph.min.js"></script>
 ```
+
+## Responsive Graph
+* In order to have a responsive graph the wrapper DIVs should have width/height of 100%
+* The "responsive" flag should be set to true (the SVG width/height will be set to 100%/100%)
+* The graph width/height should be at a ratio that fits your page - that will set the viewBox. (e.g. 800/200 100/100 etc...)

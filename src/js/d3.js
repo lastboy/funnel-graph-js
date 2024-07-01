@@ -64,6 +64,7 @@ const getTooltipElement = () => {
 const createRootSVG = ({ context }) => {
 
     const id = context.getId();
+    const responsive = context.getResponsive();
     const width = context.getWidth();
     const height = context.getHeight();
     const margin = context.getMargin();
@@ -78,8 +79,8 @@ const createRootSVG = ({ context }) => {
         .append('svg')
         .attr('class', 'd3-funnel-js')
         .attr('id', id)
-        .attr('width', width)
-        .attr('height', height)
+        .attr('width', responsive ? "100%" : width)
+        .attr('height', responsive ? "100%" : height)
         .attr('viewBox', `0 0 ${width} ${height}`)
         .attr('preserveAspectRatio', 'xMidYMin meet');
 
@@ -97,8 +98,12 @@ const updateSVGGroup = (id, margin) => {
 /**
  * Update the root SVG [demnsions, transform] 
  */
-const updateRootSVG = ({ id, width, height, rotateFrom, rotateTo }) => {
+const updateRootSVG = ({ context, rotateFrom, rotateTo  }) => {
 
+    const id = context.getId();
+    const responsive = context.getResponsive();
+    const width = context.getWidth();
+    const height = context.getHeight();
     const d3Svg = id ? getRootSvg(id) : undefined;
 
     if (d3Svg) {
@@ -108,8 +113,13 @@ const updateRootSVG = ({ id, width, height, rotateFrom, rotateTo }) => {
             .duration(1000)
 
         if (!isNaN(width) && !isNaN(height)) {
-            d3Svg.attr("width", width);
-            d3Svg.attr("height", height);
+            if( !responsive ) {
+                d3Svg.attr("width", width);
+                d3Svg.attr("height", height);
+            } else {
+                d3Svg.attr("width", "100%");
+                d3Svg.attr("height", "100%");
+            }
             d3Svg.attr('viewBox', `0 0 ${width} ${height}`);
         }
 
@@ -236,8 +246,8 @@ const addMouseEventIfNotExists = ({ context }) => (pathElement, handler, metadat
                     label = is2d ? handlerMetadata.subLabel || label : label
                     const tooltipText = `${label}: ${handlerMetadata.value}`;
                     tooltipElement
-                        .style("left", (event.clientX + 10) + "px")
-                        .style("top", (event.clientY + 10) + "px")
+                        .style("left", (event.offsetX + 10) + "px")
+                        .style("top", (event.offsetY + 10) + "px")
                         .text(tooltipText)
                         .style("opacity", "1")
                         .style("display", "flex");
@@ -279,8 +289,9 @@ const onEachPathHandler = ({ context }) => function (d, i, nodes) {
     const gradientDirection = context.getGradientDirection();
     const callbacks = context.getCallBacks();
     const d3Path = select(nodes[i]);
+
     const color = (is2d) ? colors[i] : colors;
-    const fillMode = (typeof color === 'string' || color.length === 1) ? 'solid' : 'gradient';
+    const fillMode = (typeof color === 'string' || color?.length === 1) ? 'solid' : 'gradient';
 
     if (fillMode === 'solid') {
         d3Path
@@ -325,9 +336,7 @@ const drawPaths = ({
     const id = context.getId();
     const rootSvg = getRootSvgGroup(id);
     updateRootSVG({
-        id,
-        width: context.getWidth(),
-        height: context.getHeight()
+        context
     })
 
     if (definitions && rootSvg) {
@@ -596,7 +605,7 @@ const applyGradient = (id, d3Path, colors, index, gradientDirection) => {
     }
 
     // Set color stops
-    const numberOfColors = colors.length;
+    const numberOfColors = colors?.length || 0;
     for (let i = 0; i < numberOfColors; i++) {
         d3Gradient.append('stop')
             .attr('offset', `${Math.round(100 * i / (numberOfColors - 1))}%`)

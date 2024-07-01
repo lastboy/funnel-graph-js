@@ -5375,13 +5375,14 @@ var getTooltipElement = function getTooltipElement() {
 var createRootSVG = exports.createRootSVG = function createRootSVG(_ref) {
   var context = _ref.context;
   var id = context.getId();
+  var responsive = context.getResponsive();
   var width = context.getWidth();
   var height = context.getHeight();
   var margin = context.getMargin();
   var containerSelector = context.getContainerSelector();
   var container = (0, _d3Selection.select)(containerSelector);
   container.append('div').attr('id', "d3-funnel-js-tooltip").attr('class', 'd3-funnel-js-tooltip');
-  var d3Svg = container.append('svg').attr('class', 'd3-funnel-js').attr('id', id).attr('width', width).attr('height', height).attr('viewBox', "0 0 ".concat(width, " ").concat(height)).attr('preserveAspectRatio', 'xMidYMin meet');
+  var d3Svg = container.append('svg').attr('class', 'd3-funnel-js').attr('id', id).attr('width', responsive ? "100%" : width).attr('height', responsive ? "100%" : height).attr('viewBox', "0 0 ".concat(width, " ").concat(height)).attr('preserveAspectRatio', 'xMidYMin meet');
   getRootSvgGroup(id, margin);
   return d3Svg;
 };
@@ -5394,17 +5395,24 @@ var updateSVGGroup = function updateSVGGroup(id, margin) {
  * Update the root SVG [demnsions, transform] 
  */
 var updateRootSVG = exports.updateRootSVG = function updateRootSVG(_ref2) {
-  var id = _ref2.id,
-    width = _ref2.width,
-    height = _ref2.height,
+  var context = _ref2.context,
     rotateFrom = _ref2.rotateFrom,
     rotateTo = _ref2.rotateTo;
+  var id = context.getId();
+  var responsive = context.getResponsive();
+  var width = context.getWidth();
+  var height = context.getHeight();
   var d3Svg = id ? getRootSvg(id) : undefined;
   if (d3Svg) {
     var root = d3Svg.transition().delay(500).duration(1000);
     if (!isNaN(width) && !isNaN(height)) {
-      d3Svg.attr("width", width);
-      d3Svg.attr("height", height);
+      if (!responsive) {
+        d3Svg.attr("width", width);
+        d3Svg.attr("height", height);
+      } else {
+        d3Svg.attr("width", "100%");
+        d3Svg.attr("height", "100%");
+      }
       d3Svg.attr('viewBox', "0 0 ".concat(width, " ").concat(height));
     }
     if (!isNaN(rotateTo) && !isNaN(rotateTo)) {
@@ -5514,7 +5522,7 @@ var addMouseEventIfNotExists = function addMouseEventIfNotExists(_ref6) {
             var label = handlerMetadata.label || "Value";
             label = is2d ? handlerMetadata.subLabel || label : label;
             var tooltipText = "".concat(label, ": ").concat(handlerMetadata.value);
-            tooltipElement.style("left", event.clientX + 10 + "px").style("top", event.clientY + 10 + "px").text(tooltipText).style("opacity", "1").style("display", "flex");
+            tooltipElement.style("left", event.offsetX + 10 + "px").style("top", event.offsetY + 10 + "px").text(tooltipText).style("opacity", "1").style("display", "flex");
           }, 500);
         }
       };
@@ -5548,7 +5556,7 @@ var onEachPathHandler = function onEachPathHandler(_ref7) {
     var callbacks = context.getCallBacks();
     var d3Path = (0, _d3Selection.select)(nodes[i]);
     var color = is2d ? colors[i] : colors;
-    var fillMode = typeof color === 'string' || color.length === 1 ? 'solid' : 'gradient';
+    var fillMode = typeof color === 'string' || (color === null || color === void 0 ? void 0 : color.length) === 1 ? 'solid' : 'gradient';
     if (fillMode === 'solid') {
       d3Path.attr('fill', color).attr('stroke', color);
     } else if (fillMode === 'gradient') {
@@ -5595,9 +5603,7 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref9) {
   var id = context.getId();
   var rootSvg = getRootSvgGroup(id);
   updateRootSVG({
-    id: id,
-    width: context.getWidth(),
-    height: context.getHeight()
+    context: context
   });
   if (definitions && rootSvg) {
     var paths = rootSvg.selectAll('path').data(definitions.paths);
@@ -5801,7 +5807,7 @@ var applyGradient = function applyGradient(id, d3Path, colors, index, gradientDi
   }
 
   // Set color stops
-  var numberOfColors = colors.length;
+  var numberOfColors = (colors === null || colors === void 0 ? void 0 : colors.length) || 0;
   for (var i = 0; i < numberOfColors; i++) {
     d3Gradient.append('stop').attr('offset', "".concat(Math.round(100 * i / (numberOfColors - 1)), "%")).attr('stop-color', colors[i]);
   }
@@ -5876,7 +5882,8 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
  *          'click': () => {}
  *      }
  *      details: false
- *      tooltip: true
+ *      tooltip: true,
+ *      responsive: false
  * }
  *  TODO: outlines: for two dimensions graph display
  */
@@ -5886,6 +5893,7 @@ var FunnelGraph = /*#__PURE__*/function () {
     _classCallCheck(this, FunnelGraph);
     this.id = this.generateId(), this.containerSelector = options.container;
     this.gradientDirection = options.gradientDirection && options.gradientDirection === 'vertical' ? 'vertical' : 'horizontal';
+    this.setResponsive(options.hasOwnProperty("responsive") ? options.responsive : false);
     this.setDetails(options.hasOwnProperty('details') ? options.details : true);
     this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
     this.getDirection(options === null || options === void 0 ? void 0 : options.direction);
@@ -6016,6 +6024,7 @@ var FunnelGraph = /*#__PURE__*/function () {
     value: function setDetails(bool) {
       this.details = bool;
     }
+
     /**
      * Get the graph width
      * 
@@ -6102,6 +6111,16 @@ var FunnelGraph = /*#__PURE__*/function () {
       return this.linePositions;
     }
   }, {
+    key: "getResponsive",
+    value: function getResponsive() {
+      return this.responsive;
+    }
+  }, {
+    key: "setResponsive",
+    value: function setResponsive(value) {
+      this.responsive = value;
+    }
+  }, {
     key: "getValues2d",
     value: function getValues2d() {
       var values = [];
@@ -6183,9 +6202,7 @@ var FunnelGraph = /*#__PURE__*/function () {
       this.setWidth(this.origHeight);
       this.setHeight(this.origWidth);
       (0, _d.updateRootSVG)({
-        id: this.id,
-        width: this.getWidth(),
-        height: this.getHeight()
+        context: this.getContext()
       });
       this.updateData();
     }
@@ -6198,9 +6215,7 @@ var FunnelGraph = /*#__PURE__*/function () {
       this.setWidth(this.origWidth);
       this.setHeight(this.origHeight);
       (0, _d.updateRootSVG)({
-        id: this.id,
-        width: this.getWidth(),
-        height: this.getHeight()
+        context: this.getContext()
       });
       this.updateData();
     }
@@ -6364,6 +6379,9 @@ var FunnelGraph = /*#__PURE__*/function () {
     key: "updateData",
     value: function updateData(d) {
       if (d) {
+        if (typeof d.responsive !== 'undefined') {
+          this.setResponsive(d.responsive);
+        }
         if (typeof d.width !== 'undefined') {
           this.setWidth(d.width);
         }
@@ -6449,6 +6467,13 @@ var getPathDefinitions = exports.getPathDefinitions = function getPathDefinition
   var height = context.getHeight(false);
   var valuesNum = crossAxisPoints.length - 1;
   for (var i = 0; i < valuesNum; i++) {
+    var _crossAxisPoints$i;
+    var allZeros = crossAxisPoints === null || crossAxisPoints === void 0 || (_crossAxisPoints$i = crossAxisPoints[i]) === null || _crossAxisPoints$i === void 0 ? void 0 : _crossAxisPoints$i.every(function (value) {
+      return value === 0;
+    });
+    if (allZeros) {
+      continue;
+    }
     if (isVertical) {
       var X = crossAxisPoints[i];
       var XNext = crossAxisPoints[i + 1];
@@ -6505,6 +6530,7 @@ var getCrossAxisPoints = exports.getCrossAxisPoints = function getCrossAxisPoint
   // we use this when calculating the "A" shape
   var dimension = fullDimension / 2;
   if (is2d) {
+    var _pointsOfFirstPath;
     var totalValues = values2d;
     var max = Math.max.apply(Math, _toConsumableArray(totalValues));
 
@@ -6512,12 +6538,14 @@ var getCrossAxisPoints = exports.getCrossAxisPoints = function getCrossAxisPoint
     totalValues.push(_toConsumableArray(totalValues).pop());
     // get points for path "A"
     points.push(totalValues.map(function (value) {
-      return (0, _number.roundPoint)((max - value) / max * dimension);
+      var point = (0, _number.roundPoint)((max - value) / max * dimension);
+      return isNaN(point) ? 0 : point;
     }));
     // percentages with duplicated last value
     var percentagesFull = percentages2d;
     var pointsOfFirstPath = points[0];
     for (var i = 1; i < subDataSize; i++) {
+      var _newPoints;
       var p = points[i - 1];
       var newPoints = [];
       for (var j = 0; j < dataSize; j++) {
@@ -6525,16 +6553,27 @@ var getCrossAxisPoints = exports.getCrossAxisPoints = function getCrossAxisPoint
         // eslint-disable-next-line comma-dangle
         p[j] + (fullDimension - pointsOfFirstPath[j] * 2) * (percentagesFull[j][i - 1] / 100)));
       }
-
+      newPoints = (_newPoints = newPoints) === null || _newPoints === void 0 ? void 0 : _newPoints.map(function (value) {
+        return isNaN(value) ? 0 : value;
+      });
       // duplicate the last value as points #2 and #3 have the same value on the cross axis
-      newPoints.push([].concat(newPoints).pop());
+      newPoints.push(_toConsumableArray(newPoints).pop());
       points.push(newPoints);
     }
-
-    // add points for path "D", that is simply the "inverted" path "A"
-    points.push(pointsOfFirstPath.map(function (point) {
-      return fullDimension - point;
-    }));
+    pointsOfFirstPath = (_pointsOfFirstPath = pointsOfFirstPath) === null || _pointsOfFirstPath === void 0 ? void 0 : _pointsOfFirstPath.map(function (value) {
+      return isNaN(value) ? 0 : value;
+    });
+    var allZeros = pointsOfFirstPath.every(function (value) {
+      return value === 0;
+    });
+    if (allZeros) {
+      points.push(pointsOfFirstPath);
+    } else {
+      // add points for path "D", that is simply the "inverted" path "A"
+      points.push(pointsOfFirstPath.map(function (point) {
+        return fullDimension - point;
+      }));
+    }
   } else {
     // As you can see on the visualization above points #2 and #3 have the same cross axis coordinate
     // so we duplicate the last value

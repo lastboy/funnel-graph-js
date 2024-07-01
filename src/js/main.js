@@ -30,7 +30,8 @@ import { normalizeArray } from "./utils"
  *          'click': () => {}
  *      }
  *      details: false
- *      tooltip: true
+ *      tooltip: true,
+ *      responsive: false
  * }
  *  TODO: outlines: for two dimensions graph display
  */
@@ -43,6 +44,7 @@ class FunnelGraph {
             ? 'vertical'
             : 'horizontal';
 
+        this.setResponsive(options.hasOwnProperty("responsive") ? options.responsive : false);
         this.setDetails(options.hasOwnProperty('details') ? options.details : true);
         this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
         this.getDirection(options?.direction);
@@ -157,6 +159,7 @@ class FunnelGraph {
     setDetails(bool) {
         this.details = bool;
     }
+
     /**
      * Get the graph width
      * 
@@ -223,6 +226,14 @@ class FunnelGraph {
 
     getLinePositions() {
         return this.linePositions;
+    }
+
+    getResponsive() {
+        return this.responsive;
+    }
+
+    setResponsive(value) {
+        this.responsive = value;
     }
 
     getValues2d() {
@@ -298,9 +309,7 @@ class FunnelGraph {
         this.setHeight(this.origWidth);
 
         updateRootSVG({
-            id: this.id,
-            width: this.getWidth(),
-            height: this.getHeight(),
+            context: this.getContext()
         })
 
         this.updateData();
@@ -314,9 +323,7 @@ class FunnelGraph {
         this.setHeight(this.origHeight);
 
         updateRootSVG({
-            id: this.id,
-            width: this.getWidth(),
-            height: this.getHeight()
+            context: this.getContext()
         })
 
         this.updateData();
@@ -463,6 +470,10 @@ class FunnelGraph {
     updateData(d) {
 
         if (d) {
+            if (typeof d.responsive !== 'undefined') {
+                this.setResponsive(d.responsive);
+            }   
+
             if (typeof d.width !== 'undefined') {
                 this.setWidth(d.width);
             }   

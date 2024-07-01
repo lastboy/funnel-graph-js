@@ -18,6 +18,10 @@ const getPathDefinitions = ({
     const valuesNum = crossAxisPoints.length - 1;
 
     for (let i = 0; i < valuesNum; i++) {
+        const allZeros = crossAxisPoints?.[i]?.every(value => value === 0);
+        if (allZeros) {
+            continue;
+        }
         if (isVertical) {
             const X = crossAxisPoints[i];
             const XNext = crossAxisPoints[i + 1];
@@ -79,14 +83,17 @@ const getCrossAxisPoints = ({
         // duplicate last value
         totalValues.push([...totalValues].pop());
         // get points for path "A"
-        points.push(totalValues.map(value => roundPoint((max - value) / max * dimension)));
+        points.push(totalValues.map(value => {
+            const point = roundPoint((max - value) / max * dimension);
+            return isNaN(point) ? 0 : point;
+        }));
         // percentages with duplicated last value
         const percentagesFull = percentages2d;
-        const pointsOfFirstPath = points[0];
+        let pointsOfFirstPath = points[0];
 
         for (let i = 1; i < subDataSize; i++) {
             const p = points[i - 1];
-            const newPoints = [];
+            let newPoints = [];
 
             for (let j = 0; j < dataSize; j++) {
                 newPoints.push(roundPoint(
@@ -95,13 +102,21 @@ const getCrossAxisPoints = ({
                 ));
             }
 
+            newPoints = newPoints?.map( value => isNaN(value) ? 0 : value )
             // duplicate the last value as points #2 and #3 have the same value on the cross axis
             newPoints.push([...newPoints].pop());
             points.push(newPoints);
         }
 
-        // add points for path "D", that is simply the "inverted" path "A"
-        points.push(pointsOfFirstPath.map(point => fullDimension - point));
+        pointsOfFirstPath = pointsOfFirstPath?.map( value => isNaN(value) ? 0 : value )
+
+        const allZeros = pointsOfFirstPath.every(value => value === 0);
+        if (allZeros) {
+            points.push(pointsOfFirstPath);
+        } else {
+            // add points for path "D", that is simply the "inverted" path "A"
+            points.push(pointsOfFirstPath.map(point => fullDimension - point));
+        }
     } else {
         // As you can see on the visualization above points #2 and #3 have the same cross axis coordinate
         // so we duplicate the last value

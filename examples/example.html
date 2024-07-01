@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-
+<!-- TODO: Refactor Just to make it Clean -->
 <head>
     <meta charset="UTF-8">
     <title>SVG Funnel</title>
@@ -19,7 +19,8 @@
         }
 
         .funnel {
-            height: auto;
+            height: 100%;
+            height: 100%;
         }
 
         .flex {
@@ -106,15 +107,16 @@
             <button id="useData1">DataSet 1</button>
             <button id="useData2">DataSet 2</button>
             <button id="useData3">DataSet 3</button>
-            <button id="useData4">DataSet 4 (empty)</button>
+            <button id="useData4">DataSet 4 (empty array [])</button>
+            <button id="useData5">DataSet 5 (empty zeros [0, 0...])</button>
             <button id="hideTooltip">Hide Tooltip</button>
             <button id="hideDetails">Hide Details</button>
             <button id="showTooltip">Show Tooltip</button>
             <button id="showDetails">Show Details</button>
+            <button id="setResponsive">Toggle Responsive</button>
         </div>
         <div class="flex funnel-wrapper col">
-            <div class="funnel">
-            </div>
+            <div class="funnel"></div>
         </div>
     </div>
 
@@ -123,6 +125,14 @@
 
         const emptyExample = {
             values: []
+        };
+
+        const emptyZerosExample = {
+            values: [
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 0]
+            ],
         };
 
         const dataExample1 = {
@@ -151,6 +161,7 @@
             ],
         };
 
+        let responsive = false;
         const graph = new FunnelGraph({
             container: '.funnel',
             gradientDirection: 'horizontal',
@@ -165,7 +176,8 @@
                     console.log(metadata);
                 }
             },
-            margin: { top: 120, right: 60, bottom: 60, left: 60, text: 10 }
+            margin: { top: 120, right: 60, bottom: 60, left: 60, text: 10 },
+            responsive
         });
 
         graph.draw();
@@ -219,6 +231,9 @@
         document.querySelector('#useData4').addEventListener('click', function () {
             graph.updateData(emptyExample);
         });
+        document.querySelector('#useData5').addEventListener('click', function () {
+            graph.updateData(emptyZerosExample);
+        });
         document.querySelector('#hideTooltip').addEventListener('click', function () {
             graph.updateData({ tooltip: false });
         });
@@ -230,6 +245,10 @@
         });
         document.querySelector('#showDetails').addEventListener('click', function () {
             graph.updateData({ width: 600, height: 400, details: true, margin: { top: 100, right: 80, bottom: 80, left: 80, text: 20 } });
+        });
+        document.querySelector('#setResponsive').addEventListener('click', function () {
+            responsive = !responsive;
+            graph.updateData({ responsive });
         });
 
     </script>
