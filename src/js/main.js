@@ -3,7 +3,7 @@
 import { roundPoint, formatNumber } from './number';
 import { getDefaultColors } from './colors';
 import { getCrossAxisPoints, getPathDefinitions } from './path'
-import { createRootSVG, updateRootSVG, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo, destroySVG } from './d3'
+import { createRootSVG, updateRootSVG, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo, destroySVG, getRootSvg } from './d3'
 import { nanoid } from 'nanoid';
 import { normalizeArray } from "./utils"
 
@@ -182,6 +182,33 @@ class FunnelGraph {
         return this.height + height;
     }
 
+    getDimensions({ context, margin = true }) {
+        const id = context.getId();
+        const d3Svg = getRootSvg(id);
+    
+        if (!d3Svg?.node()) {
+            return { 
+                width: context.getWidth(margin), 
+                height: context.getHeight(margin) 
+            }
+        }
+
+        const boundingRect = d3Svg.node().getBoundingClientRect()
+
+        // Calculate the scale factors
+        const xFactor =  boundingRect.width / context.getWidth(true);
+        const yFactor =  boundingRect.height / context.getHeight(true);
+
+        let width = boundingRect.width;
+        let height = boundingRect.height;
+
+        const marginObj = context.getMargin();
+        width += margin ? ((marginObj.left) + (marginObj.right)) : 0;
+        height += margin ? ((marginObj.tooltip) + (marginObj.bottom)) : 0;
+
+        return { width, height, xFactor, yFactor }
+    }
+
     /**
      * Get the margin object { top: , right: , bottom: , left:  }
      */
@@ -263,26 +290,12 @@ class FunnelGraph {
     }
 
     setLabels(labels) {
-        // if (!options.data) {
-        //     throw new Error('Data is missing');
-        // }
-
-        // const { data } = options;
-
-        // if (typeof data.labels === 'undefined') return [];
 
         labels = normalizeArray(labels)
         this.labels = labels; 
     }
 
     setValues(values) {
-        // let values = [];
-
-        // const { data } = options;
-
-        // if (typeof data === 'object') {
-        //     values = data.values;
-        // }
 
         values = normalizeArray(values)
         this.values = values;
@@ -433,11 +446,8 @@ class FunnelGraph {
           
         });
 
-        const info = this.getInfo();
-
         drawInfo({
-            context: this.getContext(),
-            info
+            context: this.getContext()
         });
     }
 

@@ -1,4 +1,4 @@
-import { select } from 'd3-selection';
+import { select, pointer } from 'd3-selection';
 import 'd3-transition';
 import { timeout } from 'd3-timer';
 import { easePolyInOut } from "d3-ease"
@@ -40,6 +40,7 @@ const getInfoSvgGroup = (id, margin) => {
     if (group.empty()) {
         group = svg.append('g').attr('id', groupId);
         if (margin) {
+            // TODO: evaluate - delete if not in use
             // group.attr('transform', `translate(${margin.left}, 0)`);
         }
     }
@@ -98,7 +99,7 @@ const updateSVGGroup = (id, margin) => {
 /**
  * Update the root SVG [demnsions, transform] 
  */
-const updateRootSVG = ({ context, rotateFrom, rotateTo  }) => {
+const updateRootSVG = ({ context, rotateFrom, rotateTo }) => {
 
     const id = context.getId();
     const responsive = context.getResponsive();
@@ -113,7 +114,7 @@ const updateRootSVG = ({ context, rotateFrom, rotateTo  }) => {
             .duration(1000)
 
         if (!isNaN(width) && !isNaN(height)) {
-            if( !responsive ) {
+            if (!responsive) {
                 d3Svg.attr("width", width);
                 d3Svg.attr("height", height);
             } else {
@@ -170,20 +171,20 @@ const gradientMakeHorizontal = ({
 
 const mouseInfoHandler = ({ context, handler, metadata, tooltip }) => function (event) {
 
-    const width = context.getWidth(false);
-    const height = context.getHeight(false);
+    const { width, height } = context.getDimensions({ context, margin: false })
     const isVertical = context.isVertical();
+
+    updateLinePositions({ context })
     const linePositions = context.getLinePositions();
 
-    const clickPoint = { x: event.offsetX, y: event.offsetY };
-
     // Determine the area between the lines
+    const clickPoint = { x: event.offsetX, y: event.offsetY };
     let areaIndex = linePositions.findIndex((pos, i) => {
 
         if (!isVertical) {
-            return clickPoint.x > pos && clickPoint.x < (linePositions[i + 1] || width);
+            return clickPoint.x >= pos && clickPoint.x <= (linePositions[i + 1] || width);
         } else {
-            return clickPoint.y > pos && clickPoint.y < (linePositions[i + 1] || height);
+            return clickPoint.y >= pos && clickPoint.y <= (linePositions[i + 1] || height);
         }
     });
 
@@ -197,19 +198,19 @@ const mouseInfoHandler = ({ context, handler, metadata, tooltip }) => function (
     const dataInfoSubLabels = dataInfoItem?.subLabels || [];
     const index = metadata.hasOwnProperty("index") ? metadata.index : -1;
 
-    dataInfoItemForArea = { 
+    dataInfoItemForArea = {
         value: dataInfoValues?.[areaIndex],
         label: dataInfoLabels?.[areaIndex],
-        subLabel:dataInfoSubLabels?.[index],
+        subLabel: dataInfoSubLabels?.[index],
         sectionIndex: areaIndex
     }
 
-    metadata = { 
+    metadata = {
         ...metadata,
         ...dataInfoItemForArea
     };
 
-    if (!tooltip) {
+    if (!tooltip && handler) {
         handler(event, metadata);
     }
 
@@ -219,14 +220,14 @@ const mouseInfoHandler = ({ context, handler, metadata, tooltip }) => function (
 const addMouseEventIfNotExists = ({ context }) => (pathElement, handler, metadata) => {
 
     const clickEventExists = !!pathElement?.on('click');
-    if (!clickEventExists) {
-        pathElement?.on('click', mouseInfoHandler({ context, handler, metadata}));
+    if (!clickEventExists && handler) {
+        pathElement?.on('click', mouseInfoHandler({ context, handler, metadata }));
     }
 
-    if (!context.showDetails() || !context.showTooltip()) {
-            pathElement?.on('mouseover', null);
-            pathElement?.on('mousemove', null);
-            pathElement?.on('mouseout', null);
+    if (!context.showDetails()) {
+        pathElement?.on('mouseover', null);
+        pathElement?.on('mousemove', null);
+        pathElement?.on('mouseout', null);
         return;
     }
 
@@ -239,19 +240,44 @@ const addMouseEventIfNotExists = ({ context }) => (pathElement, handler, metadat
             const mouseHandler = mouseInfoHandler({ context, handler, metadata, tooltip: true }).bind(this);
             const handlerMetadata = mouseHandler(event);
             if (handlerMetadata) {
+
                 const tooltipElement = getTooltipElement();
                 if (tooltipTimeout) tooltipTimeout.stop();
                 tooltipTimeout = timeout(() => {
-                    let label = handlerMetadata.label || "Value";
-                    label = is2d ? handlerMetadata.subLabel || label : label
-                    const tooltipText = `${label}: ${handlerMetadata.value}`;
-                    tooltipElement
-                        .style("left", (event.offsetX + 10) + "px")
-                        .style("top", (event.offsetY + 10) + "px")
-                        .text(tooltipText)
-                        .style("opacity", "1")
-                        .style("display", "flex");
+
+                    const path = select(this);
+
+                    if (context.showTooltip() && path && tooltipElement) {
+                        const coordinates = pointer(event, select(this));
+                        const clickPoint = { x: coordinates[0], y: coordinates[1] };
+
+                        let label = handlerMetadata.label || "Value";
+                        label = is2d ? handlerMetadata.subLabel || label : label
+                        const tooltipText = `${label}: ${handlerMetadata.value}`;
+                        tooltipElement
+                            // TODO: when exceeding the document area - move the tooltip up/down or left/right
+                            // according to the position (e.g. top /right window exceeded or right) 
+                            .style("left", (clickPoint.x + 10) + "px")
+                            .style("top", (clickPoint.y + 10) + "px")
+                            .text(tooltipText)
+                            .style("opacity", "1")
+                            .style("display", "flex");
+                    }
                 }, 500);
+
+                if (event.type === "mouseover") {
+                    const pathElement = select(this);
+                    if (pathElement) {
+                        const clickEventExists = !!pathElement?.on('click');
+                        pathElement.transition()
+                            .duration(500)
+                            .attr("stroke-width", '6px');
+
+                        if (clickEventExists) {
+                            pathElement.style("cursor", "pointer");
+                        }
+                    }
+                }
             }
         }
 
@@ -259,15 +285,25 @@ const addMouseEventIfNotExists = ({ context }) => (pathElement, handler, metadat
 
         pathElement.on('mousemove', updateTooltip);
 
-        pathElement.on('mouseout', () => {
+        pathElement.on('mouseout', (event) => {
+            const pathElement = select(event.target);
+            if (pathElement) {
+                pathElement
+                    .transition()
+                    .duration(500)
+                    .style("cursor", "pointer")
+                    .attr("stroke-width", '0');
+            }
 
             if (tooltipTimeout) tooltipTimeout.stop();
             const tooltipElement = getTooltipElement();
-            tooltipElement
-                .style("opacity", "0")
-                .style("display", "none")
-                .text("");
-            
+            if (tooltipElement) {
+                tooltipElement
+                    .style("opacity", "0")
+                    .style("display", "none")
+                    .text("");
+            }
+
         });
     }
 }
@@ -280,8 +316,6 @@ const removeClickEvent = (pathElement) => {
  * Apply the color / gradient to each path
  */
 const onEachPathHandler = ({ context }) => function (d, i, nodes) {
-
-    // id, is2d, width, height, isVertical, colors, gradientDirection, callbacks
 
     const id = context.getId();
     const is2d = context.is2d();
@@ -301,10 +335,9 @@ const onEachPathHandler = ({ context }) => function (d, i, nodes) {
         applyGradient(id, d3Path, color, i + 1, gradientDirection);
     }
 
-    if (typeof callbacks?.click === 'function') {
-        const addMouseHandler = addMouseEventIfNotExists({ context }) ;
-        addMouseHandler(d3Path, callbacks.click, { index: i });
-    }
+    const addMouseHandler = addMouseEventIfNotExists({ context });
+    addMouseHandler(d3Path, (typeof callbacks?.click === 'function') ? callbacks.click : undefined, { index: i });
+
 };
 
 /**
@@ -346,20 +379,21 @@ const drawPaths = ({
 
         const pathHandler = onEachPathHandler({ context });
         const getDataInfoHandler = getDataInfo({ context });
-        
+
         // paths creation
         const enterPaths = paths.enter()
             .append('path')
             .attr('d', d => d.path)
             .attr('data-info', getDataInfoHandler)
             .attr('opacity', 0)
+            .attr("stroke-width", '0')
             .transition()
             .ease(easePolyInOut)
             .delay((d, i) => i * 100)
             .duration(1000)
             .attr('opacity', 1)
             .each(pathHandler)
-            
+
 
         // Update existing paths
         paths.merge(enterPaths)
@@ -369,6 +403,7 @@ const drawPaths = ({
             .duration(1000)
             .attr('d', d => d.path)
             .attr('data-info', getDataInfoHandler)
+            .attr("stroke-width", '0')
             .attr('opacity', 1)
             .each(pathHandler);
 
@@ -379,6 +414,7 @@ const drawPaths = ({
             .delay((d, i) => i * 100)
             .duration(1000)
             .attr('opacity', 0)
+            .attr("stroke-width", '0')
             .each(function () {
                 const path = select(this);
                 path.on('end', () => {
@@ -416,20 +452,31 @@ const onEachTextHandler = ({ offset }) => {
 };
 
 // Function to update line positions
-const updateLinePositions = ({ context }) => (info, vertical, margin, noMarginSpacing) => {
-    context.setLinePositions(info.map((d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top)));
+const updateLinePositions = ({ context }) => {
+
+    const { width, height, xFactor, yFactor } = context.getDimensions({ context, margin: false })
+
+    const margin = context.getMargin();
+    const info = context.getInfo();
+    const vertical = context.isVertical();
+
+    const noMarginHeight = height - (margin.top * yFactor) - (margin.bottom * yFactor);
+    const noMarginWidth = width - (margin.left * xFactor) - (margin.right * xFactor);
+    const noMarginSpacing = (!vertical ? noMarginWidth : noMarginHeight) / (info.length);
+
+    context.setLinePositions(info.map((d, i) => noMarginSpacing * (i + 1) + (!vertical ? (margin.left * xFactor) : (margin.top * yFactor))));
 }
 
 /**
  * Handle the SVG text display on the graph
  */
 const drawInfo = ({
-    context,
-    info
+    context
 }) => {
 
     const id = context.getId();
     const margin = context.getMargin();
+    const info = context.getInfo();
 
     updateSVGGroup(id, margin);
 
@@ -443,14 +490,11 @@ const drawInfo = ({
         const width = context.getWidth();
         const height = context.getHeight();
         const vertical = context.isVertical();
-
         const textGap = (info.length + 1);
         const noMarginHeight = height - margin.top - margin.bottom;
         const noMarginWidth = width - margin.left - margin.right;
         const noMarginSpacing = (!vertical ? noMarginWidth : noMarginHeight) / (info.length);
         const calcTextPos = (i) => ((noMarginSpacing * i) + (!vertical ? margin.left : margin.top) + (noMarginSpacing / textGap))
-
-        const updateLinePositionsHandler = updateLinePositions({ context });
 
         getInfoSvgGroup(id, margin).selectAll('g.label__group')
             .data(info)
@@ -490,8 +534,6 @@ const drawInfo = ({
                                 .text(d => d.percentage)
                                 .each(textHandlerPercentage);
                         })
-
-
                 },
 
                 update => update.each(function (d, i) {
@@ -531,9 +573,6 @@ const drawInfo = ({
                 exit => exit.remove()
             );
 
-        // Update line positions initially
-        updateLinePositionsHandler(info, vertical, margin, noMarginSpacing);
-
         // display graph dividers
         const infoCopy = info.slice(0, -1);
         const lines = getInfoSvgGroup(id, margin).selectAll('.divider')
@@ -563,6 +602,10 @@ const drawInfo = ({
             .duration(500)
             .attr('stroke-opacity', 0)
             .remove();
+
+        // Update line positions initially
+        updateLinePositions({ context });
+
     } else {
         getInfoSvgGroup(id, margin).selectAll('g.label__group').remove();
         getInfoSvgGroup(id, margin).selectAll('.divider').remove();

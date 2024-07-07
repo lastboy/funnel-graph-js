@@ -5353,6 +5353,7 @@ var getInfoSvgGroup = function getInfoSvgGroup(id, margin) {
   if (group.empty()) {
     group = svg.append('g').attr('id', groupId);
     if (margin) {
+      // TODO: evaluate - delete if not in use
       // group.attr('transform', `translate(${margin.left}, 0)`);
     }
   }
@@ -5448,21 +5449,28 @@ var mouseInfoHandler = function mouseInfoHandler(_ref5) {
     metadata = _ref5.metadata,
     tooltip = _ref5.tooltip;
   return function (event) {
-    var width = context.getWidth(false);
-    var height = context.getHeight(false);
+    var _context$getDimension = context.getDimensions({
+        context: context,
+        margin: false
+      }),
+      width = _context$getDimension.width,
+      height = _context$getDimension.height;
     var isVertical = context.isVertical();
+    updateLinePositions({
+      context: context
+    });
     var linePositions = context.getLinePositions();
+
+    // Determine the area between the lines
     var clickPoint = {
       x: event.offsetX,
       y: event.offsetY
     };
-
-    // Determine the area between the lines
     var areaIndex = linePositions.findIndex(function (pos, i) {
       if (!isVertical) {
-        return clickPoint.x > pos && clickPoint.x < (linePositions[i + 1] || width);
+        return clickPoint.x >= pos && clickPoint.x <= (linePositions[i + 1] || width);
       } else {
-        return clickPoint.y > pos && clickPoint.y < (linePositions[i + 1] || height);
+        return clickPoint.y >= pos && clickPoint.y <= (linePositions[i + 1] || height);
       }
     });
 
@@ -5481,7 +5489,7 @@ var mouseInfoHandler = function mouseInfoHandler(_ref5) {
       sectionIndex: areaIndex
     };
     metadata = _objectSpread(_objectSpread({}, metadata), dataInfoItemForArea);
-    if (!tooltip) {
+    if (!tooltip && handler) {
       handler(event, metadata);
     }
     return metadata;
@@ -5491,14 +5499,14 @@ var addMouseEventIfNotExists = function addMouseEventIfNotExists(_ref6) {
   var context = _ref6.context;
   return function (pathElement, handler, metadata) {
     var clickEventExists = !!(pathElement !== null && pathElement !== void 0 && pathElement.on('click'));
-    if (!clickEventExists) {
+    if (!clickEventExists && handler) {
       pathElement === null || pathElement === void 0 || pathElement.on('click', mouseInfoHandler({
         context: context,
         handler: handler,
         metadata: metadata
       }));
     }
-    if (!context.showDetails() || !context.showTooltip()) {
+    if (!context.showDetails()) {
       pathElement === null || pathElement === void 0 || pathElement.on('mouseover', null);
       pathElement === null || pathElement === void 0 || pathElement.on('mousemove', null);
       pathElement === null || pathElement === void 0 || pathElement.on('mouseout', null);
@@ -5507,6 +5515,7 @@ var addMouseEventIfNotExists = function addMouseEventIfNotExists(_ref6) {
     var overEventExists = !!pathElement.on('mouseover');
     if (!overEventExists) {
       var updateTooltip = function updateTooltip(event) {
+        var _this = this;
         var is2d = context.is2d();
         var mouseHandler = mouseInfoHandler({
           context: context,
@@ -5519,20 +5528,47 @@ var addMouseEventIfNotExists = function addMouseEventIfNotExists(_ref6) {
           var tooltipElement = getTooltipElement();
           if (tooltipTimeout) tooltipTimeout.stop();
           tooltipTimeout = (0, _d3Timer.timeout)(function () {
-            var label = handlerMetadata.label || "Value";
-            label = is2d ? handlerMetadata.subLabel || label : label;
-            var tooltipText = "".concat(label, ": ").concat(handlerMetadata.value);
-            tooltipElement.style("left", event.offsetX + 10 + "px").style("top", event.offsetY + 10 + "px").text(tooltipText).style("opacity", "1").style("display", "flex");
+            var path = (0, _d3Selection.select)(_this);
+            if (context.showTooltip() && path && tooltipElement) {
+              var coordinates = (0, _d3Selection.pointer)(event, (0, _d3Selection.select)(_this));
+              var clickPoint = {
+                x: coordinates[0],
+                y: coordinates[1]
+              };
+              var label = handlerMetadata.label || "Value";
+              label = is2d ? handlerMetadata.subLabel || label : label;
+              var tooltipText = "".concat(label, ": ").concat(handlerMetadata.value);
+              tooltipElement
+              // TODO: when exceeding the document area - move the tooltip up/down or left/right
+              // according to the position (e.g. top /right window exceeded or right) 
+              .style("left", clickPoint.x + 10 + "px").style("top", clickPoint.y + 10 + "px").text(tooltipText).style("opacity", "1").style("display", "flex");
+            }
           }, 500);
+          if (event.type === "mouseover") {
+            var _pathElement = (0, _d3Selection.select)(this);
+            if (_pathElement) {
+              var _clickEventExists = !!(_pathElement !== null && _pathElement !== void 0 && _pathElement.on('click'));
+              _pathElement.transition().duration(500).attr("stroke-width", '6px');
+              if (_clickEventExists) {
+                _pathElement.style("cursor", "pointer");
+              }
+            }
+          }
         }
       };
       var tooltipTimeout;
       pathElement.on('mouseover', updateTooltip);
       pathElement.on('mousemove', updateTooltip);
-      pathElement.on('mouseout', function () {
+      pathElement.on('mouseout', function (event) {
+        var pathElement = (0, _d3Selection.select)(event.target);
+        if (pathElement) {
+          pathElement.transition().duration(500).style("cursor", "pointer").attr("stroke-width", '0');
+        }
         if (tooltipTimeout) tooltipTimeout.stop();
         var tooltipElement = getTooltipElement();
-        tooltipElement.style("opacity", "0").style("display", "none").text("");
+        if (tooltipElement) {
+          tooltipElement.style("opacity", "0").style("display", "none").text("");
+        }
       });
     }
   };
@@ -5547,8 +5583,6 @@ var removeClickEvent = function removeClickEvent(pathElement) {
 var onEachPathHandler = function onEachPathHandler(_ref7) {
   var context = _ref7.context;
   return function (d, i, nodes) {
-    // id, is2d, width, height, isVertical, colors, gradientDirection, callbacks
-
     var id = context.getId();
     var is2d = context.is2d();
     var colors = context.getColors();
@@ -5562,14 +5596,12 @@ var onEachPathHandler = function onEachPathHandler(_ref7) {
     } else if (fillMode === 'gradient') {
       applyGradient(id, d3Path, color, i + 1, gradientDirection);
     }
-    if (typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.click) === 'function') {
-      var addMouseHandler = addMouseEventIfNotExists({
-        context: context
-      });
-      addMouseHandler(d3Path, callbacks.click, {
-        index: i
-      });
-    }
+    var addMouseHandler = addMouseEventIfNotExists({
+      context: context
+    });
+    addMouseHandler(d3Path, typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.click) === 'function' ? callbacks.click : undefined, {
+      index: i
+    });
   };
 };
 
@@ -5617,7 +5649,7 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref9) {
     // paths creation
     var enterPaths = paths.enter().append('path').attr('d', function (d) {
       return d.path;
-    }).attr('data-info', getDataInfoHandler).attr('opacity', 0).transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
+    }).attr('data-info', getDataInfoHandler).attr('opacity', 0).attr("stroke-width", '0').transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
       return i * 100;
     }).duration(1000).attr('opacity', 1).each(pathHandler);
 
@@ -5626,12 +5658,12 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref9) {
       return i * 100;
     }).duration(1000).attr('d', function (d) {
       return d.path;
-    }).attr('data-info', getDataInfoHandler).attr('opacity', 1).each(pathHandler);
+    }).attr('data-info', getDataInfoHandler).attr("stroke-width", '0').attr('opacity', 1).each(pathHandler);
 
     // Exit and remove old paths
     paths.exit().transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
       return i * 100;
-    }).duration(1000).attr('opacity', 0).each(function () {
+    }).duration(1000).attr('opacity', 0).attr("stroke-width", '0').each(function () {
       var path = (0, _d3Selection.select)(this);
       path.on('end', function () {
         removeClickEvent(path);
@@ -5661,21 +5693,33 @@ var onEachTextHandler = function onEachTextHandler(_ref10) {
 // Function to update line positions
 var updateLinePositions = function updateLinePositions(_ref11) {
   var context = _ref11.context;
-  return function (info, vertical, margin, noMarginSpacing) {
-    context.setLinePositions(info.map(function (d, i) {
-      return noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top);
-    }));
-  };
+  var _context$getDimension2 = context.getDimensions({
+      context: context,
+      margin: false
+    }),
+    width = _context$getDimension2.width,
+    height = _context$getDimension2.height,
+    xFactor = _context$getDimension2.xFactor,
+    yFactor = _context$getDimension2.yFactor;
+  var margin = context.getMargin();
+  var info = context.getInfo();
+  var vertical = context.isVertical();
+  var noMarginHeight = height - margin.top * yFactor - margin.bottom * yFactor;
+  var noMarginWidth = width - margin.left * xFactor - margin.right * xFactor;
+  var noMarginSpacing = (!vertical ? noMarginWidth : noMarginHeight) / info.length;
+  context.setLinePositions(info.map(function (d, i) {
+    return noMarginSpacing * (i + 1) + (!vertical ? margin.left * xFactor : margin.top * yFactor);
+  }));
 };
 
 /**
  * Handle the SVG text display on the graph
  */
 var drawInfo = exports.drawInfo = function drawInfo(_ref12) {
-  var context = _ref12.context,
-    info = _ref12.info;
+  var context = _ref12.context;
   var id = context.getId();
   var margin = context.getMargin();
+  var info = context.getInfo();
   updateSVGGroup(id, margin);
   if (!context.showDetails()) {
     getInfoSvgGroup(id, margin).selectAll('g.label__group').remove();
@@ -5693,9 +5737,6 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref12) {
     var calcTextPos = function calcTextPos(i) {
       return noMarginSpacing * i + (!vertical ? margin.left : margin.top) + noMarginSpacing / textGap;
     };
-    var updateLinePositionsHandler = updateLinePositions({
-      context: context
-    });
     getInfoSvgGroup(id, margin).selectAll('g.label__group').data(info).join(function (enter) {
       return enter.append("g").attr("class", "label__group").each(function (d, i) {
         var x = !vertical ? calcTextPos(i) : margin.text;
@@ -5753,9 +5794,6 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref12) {
       return exit.remove();
     });
 
-    // Update line positions initially
-    updateLinePositionsHandler(info, vertical, margin, noMarginSpacing);
-
     // display graph dividers
     var infoCopy = info.slice(0, -1);
     var lines = getInfoSvgGroup(id, margin).selectAll('.divider').data(infoCopy);
@@ -5778,6 +5816,11 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref12) {
 
     // Exit selection
     lines.exit().transition().duration(500).attr('stroke-opacity', 0).remove();
+
+    // Update line positions initially
+    updateLinePositions({
+      context: context
+    });
   } else {
     getInfoSvgGroup(id, margin).selectAll('g.label__group').remove();
     getInfoSvgGroup(id, margin).selectAll('.divider').remove();
@@ -6052,6 +6095,37 @@ var FunnelGraph = /*#__PURE__*/function () {
       var height = margin ? this.margin.top + this.margin.bottom : 0;
       return this.height + height;
     }
+  }, {
+    key: "getDimensions",
+    value: function getDimensions(_ref) {
+      var context = _ref.context,
+        _ref$margin = _ref.margin,
+        margin = _ref$margin === void 0 ? true : _ref$margin;
+      var id = context.getId();
+      var d3Svg = (0, _d.getRootSvg)(id);
+      if (!(d3Svg !== null && d3Svg !== void 0 && d3Svg.node())) {
+        return {
+          width: context.getWidth(margin),
+          height: context.getHeight(margin)
+        };
+      }
+      var boundingRect = d3Svg.node().getBoundingClientRect();
+
+      // Calculate the scale factors
+      var xFactor = boundingRect.width / context.getWidth(true);
+      var yFactor = boundingRect.height / context.getHeight(true);
+      var width = boundingRect.width;
+      var height = boundingRect.height;
+      var marginObj = context.getMargin();
+      width += margin ? marginObj.left + marginObj.right : 0;
+      height += margin ? marginObj.tooltip + marginObj.bottom : 0;
+      return {
+        width: width,
+        height: height,
+        xFactor: xFactor,
+        yFactor: yFactor
+      };
+    }
 
     /**
      * Get the margin object { top: , right: , bottom: , left:  }
@@ -6154,28 +6228,12 @@ var FunnelGraph = /*#__PURE__*/function () {
   }, {
     key: "setLabels",
     value: function setLabels(labels) {
-      // if (!options.data) {
-      //     throw new Error('Data is missing');
-      // }
-
-      // const { data } = options;
-
-      // if (typeof data.labels === 'undefined') return [];
-
       labels = (0, _utils.normalizeArray)(labels);
       this.labels = labels;
     }
   }, {
     key: "setValues",
     value: function setValues(values) {
-      // let values = [];
-
-      // const { data } = options;
-
-      // if (typeof data === 'object') {
-      //     values = data.values;
-      // }
-
       values = (0, _utils.normalizeArray)(values);
       this.values = values;
     }
@@ -6341,10 +6399,8 @@ var FunnelGraph = /*#__PURE__*/function () {
         context: this.getContext(),
         definitions: definitions
       });
-      var info = this.getInfo();
       (0, _d.drawInfo)({
-        context: this.getContext(),
-        info: info
+        context: this.getContext()
       });
     }
 
