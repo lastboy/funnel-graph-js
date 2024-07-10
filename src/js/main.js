@@ -193,7 +193,7 @@ class FunnelGraph {
             }
         }
 
-        const boundingRect = d3Svg.node().getBoundingClientRect()
+        const boundingRect = d3Svg.node().getBoundingClientRect();
 
         // Calculate the scale factors
         const xFactor =  boundingRect.width / context.getWidth(true);
@@ -206,7 +206,7 @@ class FunnelGraph {
         width += margin ? ((marginObj.left) + (marginObj.right)) : 0;
         height += margin ? ((marginObj.tooltip) + (marginObj.bottom)) : 0;
 
-        return { width, height, xFactor, yFactor }
+        return { width, height, xFactor, yFactor, left: boundingRect.left, top: boundingRect.top, x: boundingRect.x , y: boundingRect.y };
     }
 
     /**

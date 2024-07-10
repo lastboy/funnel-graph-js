@@ -72,7 +72,12 @@ const createRootSVG = ({ context }) => {
     const containerSelector = context.getContainerSelector()
 
     const container = select(containerSelector);
-    container.append('div')
+
+    const bodySelection = select("body");
+    const tooltipParentElement = bodySelection.empty() ? container : bodySelection;
+
+    // add tooltip element
+    tooltipParentElement.append('div')
         .attr('id', "d3-funnel-js-tooltip")
         .attr('class', 'd3-funnel-js-tooltip')
 
@@ -169,7 +174,7 @@ const gradientMakeHorizontal = ({
 
 };
 
-const mouseInfoHandler = ({ context, handler, metadata, tooltip }) => function (event) {
+const mouseInfoHandler = ({ context, clickHandler, metadata, tooltip }) => function (e) {
 
     const { width, height } = context.getDimensions({ context, margin: false })
     const isVertical = context.isVertical();
@@ -178,7 +183,7 @@ const mouseInfoHandler = ({ context, handler, metadata, tooltip }) => function (
     const linePositions = context.getLinePositions();
 
     // Determine the area between the lines
-    const clickPoint = { x: event.offsetX, y: event.offsetY };
+    const clickPoint = { x: e.offsetX, y: e.offsetY };
     let areaIndex = linePositions.findIndex((pos, i) => {
 
         if (!isVertical) {
@@ -210,18 +215,18 @@ const mouseInfoHandler = ({ context, handler, metadata, tooltip }) => function (
         ...dataInfoItemForArea
     };
 
-    if (!tooltip && handler) {
-        handler(event, metadata);
+    if (!tooltip && clickHandler) {
+        clickHandler(e, metadata);
     }
 
     return metadata;
 };
 
-const addMouseEventIfNotExists = ({ context }) => (pathElement, handler, metadata) => {
+const addMouseEventIfNotExists = ({ context }) => (pathElement, clickHandler, tooltipHandler, metadata) => {
 
     const clickEventExists = !!pathElement?.on('click');
-    if (!clickEventExists && handler) {
-        pathElement?.on('click', mouseInfoHandler({ context, handler, metadata }));
+    if (!clickEventExists && clickHandler) {
+        pathElement?.on('click', mouseInfoHandler({ context, clickHandler, metadata }));
     }
 
     if (!context.showDetails()) {
@@ -235,10 +240,11 @@ const addMouseEventIfNotExists = ({ context }) => (pathElement, handler, metadat
     if (!overEventExists) {
         let tooltipTimeout;
 
-        function updateTooltip(event) {
+        function updateTooltip(e) {
             const is2d = context.is2d();
-            const mouseHandler = mouseInfoHandler({ context, handler, metadata, tooltip: true }).bind(this);
-            const handlerMetadata = mouseHandler(event);
+            const mouseHandler = mouseInfoHandler({ context, handler: clickHandler, metadata, tooltip: true }).bind(this);
+            const handlerMetadata = mouseHandler(e);
+
             if (handlerMetadata) {
 
                 const tooltipElement = getTooltipElement();
@@ -248,34 +254,43 @@ const addMouseEventIfNotExists = ({ context }) => (pathElement, handler, metadat
                     const path = select(this);
 
                     if (context.showTooltip() && path && tooltipElement) {
-                        const coordinates = pointer(event, select(this));
-                        const clickPoint = { x: coordinates[0], y: coordinates[1] };
 
+                        // get the mouse point
+                        const [x, y] = pointer(e, path);
+                        const clickPoint = { x, y };
+
+                        // set the tooltip with the relevant text
                         let label = handlerMetadata.label || "Value";
-                        label = is2d ? handlerMetadata.subLabel || label : label
-                        const tooltipText = `${label}: ${handlerMetadata.value}`;
-                        tooltipElement
-                            // TODO: when exceeding the document area - move the tooltip up/down or left/right
-                            // according to the position (e.g. top /right window exceeded or right) 
-                            .style("left", (clickPoint.x + 10) + "px")
-                            .style("top", (clickPoint.y + 10) + "px")
-                            .text(tooltipText)
-                            .style("opacity", "1")
-                            .style("display", "flex");
+                        label = is2d ? handlerMetadata.subLabel || label : label;
+                        const value = handlerMetadata.value;
+
+                        if (tooltipHandler) {
+                            tooltipHandler(e, { label, value, x, y })
+                        } else {
+                            const tooltipText = `${label}: ${value}`;
+                            tooltipElement
+                                // TODO: when exceeding the document area - move the tooltip up/down or left/right
+                                // according to the position (e.g. top /right window eƒxceeded or right) 
+                                .style("left", (clickPoint.x + 10) + "px")
+                                .style("top", (clickPoint.y + 10) + "px")
+                                .text(tooltipText)
+                                .style("opacity", "1")
+                                .style("display", "flex");
+                        }
                     }
                 }, 500);
+            }
 
-                if (event.type === "mouseover") {
-                    const pathElement = select(this);
-                    if (pathElement) {
-                        const clickEventExists = !!pathElement?.on('click');
-                        pathElement.transition()
-                            .duration(500)
-                            .attr("stroke-width", '6px');
+            if (e.type === "mouseover") {
+                const pathElement = select(this);
+                if (pathElement) {
+                    const clickEventExists = !!pathElement?.on('click');
+                    pathElement.transition()
+                        .duration(500)
+                        .attr("stroke-width", '6px');
 
-                        if (clickEventExists) {
-                            pathElement.style("cursor", "pointer");
-                        }
+                    if (clickEventExists) {
+                        pathElement.style("cursor", "pointer");
                     }
                 }
             }
@@ -336,7 +351,12 @@ const onEachPathHandler = ({ context }) => function (d, i, nodes) {
     }
 
     const addMouseHandler = addMouseEventIfNotExists({ context });
-    addMouseHandler(d3Path, (typeof callbacks?.click === 'function') ? callbacks.click : undefined, { index: i });
+    addMouseHandler(
+        d3Path,
+        (typeof callbacks?.click === 'function') ? callbacks.click : undefined,
+        (typeof callbacks?.tooltip === 'function') ? callbacks.tooltip : undefined,
+        { index: i }
+    );
 
 };
 

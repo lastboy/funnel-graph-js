@@ -96,7 +96,7 @@
 </head>
 
 <body>
-    <div class="main-wrapper flex row">
+    <div class="main-wrapper flex row" style="position: relative">
         <div class="flex method-buttons col">
             <button id="makeVertical">Vertical</button>
             <button id="makeHorizontal">Horizontal</button>
@@ -115,9 +115,11 @@
             <button id="showDetails">Show Details</button>
             <button id="setResponsive">Toggle Responsive</button>
         </div>
-        <div class="flex funnel-wrapper col">
-            <div class="funnel"></div>
-        </div>
+        <div style="width: 100%">
+            <div class="flex funnel-wrapper col">
+                <div class="funnel"></div>
+            </div>
+        </div>  
     </div>
 
     <script src="../dist/js/funnel-graph.js"></script>
@@ -173,8 +175,12 @@
             subLabelValue: 'raw',
             callbacks: {
                 click: (event, metadata) => {
-                    console.log(metadata);
-                }
+                    console.log("click handler", metadata);
+                },
+                // adding a tooltip handler instead of the ootb tooltip display
+                // tooltip: (event, metadata) => {
+                //     console.log("tooltip handler", metadata);
+                // }
             },
             margin: { top: 120, right: 60, bottom: 60, left: 60, text: 10 },
             responsive

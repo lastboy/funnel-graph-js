@@ -16,7 +16,8 @@
   border-radius: 5px;
   border: 1px solid #000000;
   background-color: #333333;
-  color: #f0f0f0; }
+  color: #f0f0f0;
+  z-index: 1000; }
 
 .d3-funnel-js {
   display: block;

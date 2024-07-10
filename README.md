@@ -87,13 +87,16 @@ graph.draw();
 * **gradientDirection** ('vertical' | 'horizontal')
 * **callbacks** object for handling user actions (e.g. { 'click': () => {} })
     * **click** callback function for click events
-    * **Signature**: `({ index, value, label, subLabel, sectionIndex }) => {}`
-        * **Parameters**:
-            * **index**: The index of the item that was clicked.
-            * **sectionIndex**: The index of the section that contains the clicked item.
-            * **value**: The value associated with the clicked item.
-            * **label**: The label of the clicked item.
-            * **subLabel**: The sub-label of the clicked item (if applicable).
+        * **Signature**: `({ index, value, label, subLabel, sectionIndex }) => {}`
+            * **Parameters**:
+                * **index**: The index of the path item that was clicked.
+                * **sectionIndex**: The index of the section that contains the clicked path item.
+                * **value**: The value associated with the clicked item.
+                * **label**: The label of the clicked item.
+                * **subLabel**: The sub-label of the clicked item (if applicable).
+    * **tooltip** callback function for tooltip event - overrides the OOTB implementation
+        * **Signature**: `(event, { label, value }) => {}`
+
 * **displayPercent** should be displayed  [true | false],
 * **details** should be displayed [ true | false ]
 * **tooltip** should be displayed [ true | false ]  

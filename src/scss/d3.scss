@@ -19,6 +19,7 @@
     border: $tooltip-border;
     background-color: $tooltip-bg;
     color: $tooltip;
+    z-index: $tooltip-z-index;
 }
 
 .d3-funnel-js {

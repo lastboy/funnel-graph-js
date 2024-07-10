@@ -5315,6 +5315,12 @@ require("d3-transition");
 var _d3Timer = require("d3-timer");
 var _d3Ease = require("d3-ease");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
@@ -5382,7 +5388,11 @@ var createRootSVG = exports.createRootSVG = function createRootSVG(_ref) {
   var margin = context.getMargin();
   var containerSelector = context.getContainerSelector();
   var container = (0, _d3Selection.select)(containerSelector);
-  container.append('div').attr('id', "d3-funnel-js-tooltip").attr('class', 'd3-funnel-js-tooltip');
+  var bodySelection = (0, _d3Selection.select)("body");
+  var tooltipParentElement = bodySelection.empty() ? container : bodySelection;
+
+  // add tooltip element
+  tooltipParentElement.append('div').attr('id', "d3-funnel-js-tooltip").attr('class', 'd3-funnel-js-tooltip');
   var d3Svg = container.append('svg').attr('class', 'd3-funnel-js').attr('id', id).attr('width', responsive ? "100%" : width).attr('height', responsive ? "100%" : height).attr('viewBox', "0 0 ".concat(width, " ").concat(height)).attr('preserveAspectRatio', 'xMidYMin meet');
   getRootSvgGroup(id, margin);
   return d3Svg;
@@ -5445,10 +5455,10 @@ var gradientMakeHorizontal = exports.gradientMakeHorizontal = function gradientM
 };
 var mouseInfoHandler = function mouseInfoHandler(_ref5) {
   var context = _ref5.context,
-    handler = _ref5.handler,
+    clickHandler = _ref5.clickHandler,
     metadata = _ref5.metadata,
     tooltip = _ref5.tooltip;
-  return function (event) {
+  return function (e) {
     var _context$getDimension = context.getDimensions({
         context: context,
         margin: false
@@ -5463,8 +5473,8 @@ var mouseInfoHandler = function mouseInfoHandler(_ref5) {
 
     // Determine the area between the lines
     var clickPoint = {
-      x: event.offsetX,
-      y: event.offsetY
+      x: e.offsetX,
+      y: e.offsetY
     };
     var areaIndex = linePositions.findIndex(function (pos, i) {
       if (!isVertical) {
@@ -5489,20 +5499,20 @@ var mouseInfoHandler = function mouseInfoHandler(_ref5) {
       sectionIndex: areaIndex
     };
     metadata = _objectSpread(_objectSpread({}, metadata), dataInfoItemForArea);
-    if (!tooltip && handler) {
-      handler(event, metadata);
+    if (!tooltip && clickHandler) {
+      clickHandler(e, metadata);
     }
     return metadata;
   };
 };
 var addMouseEventIfNotExists = function addMouseEventIfNotExists(_ref6) {
   var context = _ref6.context;
-  return function (pathElement, handler, metadata) {
+  return function (pathElement, clickHandler, tooltipHandler, metadata) {
     var clickEventExists = !!(pathElement !== null && pathElement !== void 0 && pathElement.on('click'));
-    if (!clickEventExists && handler) {
+    if (!clickEventExists && clickHandler) {
       pathElement === null || pathElement === void 0 || pathElement.on('click', mouseInfoHandler({
         context: context,
-        handler: handler,
+        clickHandler: clickHandler,
         metadata: metadata
       }));
     }
@@ -5514,44 +5524,60 @@ var addMouseEventIfNotExists = function addMouseEventIfNotExists(_ref6) {
     }
     var overEventExists = !!pathElement.on('mouseover');
     if (!overEventExists) {
-      var updateTooltip = function updateTooltip(event) {
+      var updateTooltip = function updateTooltip(e) {
         var _this = this;
         var is2d = context.is2d();
         var mouseHandler = mouseInfoHandler({
           context: context,
-          handler: handler,
+          handler: clickHandler,
           metadata: metadata,
           tooltip: true
         }).bind(this);
-        var handlerMetadata = mouseHandler(event);
+        var handlerMetadata = mouseHandler(e);
         if (handlerMetadata) {
           var tooltipElement = getTooltipElement();
           if (tooltipTimeout) tooltipTimeout.stop();
           tooltipTimeout = (0, _d3Timer.timeout)(function () {
             var path = (0, _d3Selection.select)(_this);
             if (context.showTooltip() && path && tooltipElement) {
-              var coordinates = (0, _d3Selection.pointer)(event, (0, _d3Selection.select)(_this));
+              // get the mouse point
+              var _pointer = (0, _d3Selection.pointer)(e, path),
+                _pointer2 = _slicedToArray(_pointer, 2),
+                x = _pointer2[0],
+                y = _pointer2[1];
               var clickPoint = {
-                x: coordinates[0],
-                y: coordinates[1]
+                x: x,
+                y: y
               };
+
+              // set the tooltip with the relevant text
               var label = handlerMetadata.label || "Value";
               label = is2d ? handlerMetadata.subLabel || label : label;
-              var tooltipText = "".concat(label, ": ").concat(handlerMetadata.value);
-              tooltipElement
-              // TODO: when exceeding the document area - move the tooltip up/down or left/right
-              // according to the position (e.g. top /right window exceeded or right) 
-              .style("left", clickPoint.x + 10 + "px").style("top", clickPoint.y + 10 + "px").text(tooltipText).style("opacity", "1").style("display", "flex");
+              var value = handlerMetadata.value;
+              if (tooltipHandler) {
+                tooltipHandler(e, {
+                  label: label,
+                  value: value,
+                  x: x,
+                  y: y
+                });
+              } else {
+                var tooltipText = "".concat(label, ": ").concat(value);
+                tooltipElement
+                // TODO: when exceeding the document area - move the tooltip up/down or left/right
+                // according to the position (e.g. top /right window eƒxceeded or right) 
+                .style("left", clickPoint.x + 10 + "px").style("top", clickPoint.y + 10 + "px").text(tooltipText).style("opacity", "1").style("display", "flex");
+              }
             }
           }, 500);
-          if (event.type === "mouseover") {
-            var _pathElement = (0, _d3Selection.select)(this);
-            if (_pathElement) {
-              var _clickEventExists = !!(_pathElement !== null && _pathElement !== void 0 && _pathElement.on('click'));
-              _pathElement.transition().duration(500).attr("stroke-width", '6px');
-              if (_clickEventExists) {
-                _pathElement.style("cursor", "pointer");
-              }
+        }
+        if (e.type === "mouseover") {
+          var _pathElement = (0, _d3Selection.select)(this);
+          if (_pathElement) {
+            var _clickEventExists = !!(_pathElement !== null && _pathElement !== void 0 && _pathElement.on('click'));
+            _pathElement.transition().duration(500).attr("stroke-width", '6px');
+            if (_clickEventExists) {
+              _pathElement.style("cursor", "pointer");
             }
           }
         }
@@ -5599,7 +5625,7 @@ var onEachPathHandler = function onEachPathHandler(_ref7) {
     var addMouseHandler = addMouseEventIfNotExists({
       context: context
     });
-    addMouseHandler(d3Path, typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.click) === 'function' ? callbacks.click : undefined, {
+    addMouseHandler(d3Path, typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.click) === 'function' ? callbacks.click : undefined, typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.tooltip) === 'function' ? callbacks.tooltip : undefined, {
       index: i
     });
   };
@@ -6123,7 +6149,11 @@ var FunnelGraph = /*#__PURE__*/function () {
         width: width,
         height: height,
         xFactor: xFactor,
-        yFactor: yFactor
+        yFactor: yFactor,
+        left: boundingRect.left,
+        top: boundingRect.top,
+        x: boundingRect.x,
+        y: boundingRect.y
       };
     }
 
