@@ -1,6 +1,6 @@
 {
   "name": "d3-funnel-graph",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "SVG Funnel Graph Javascript Library",
   "main": "dist/js/funnel-graph.min.js",
   "style": "dist/funnel-graph.min.css",

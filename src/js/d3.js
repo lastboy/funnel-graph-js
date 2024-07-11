@@ -287,7 +287,7 @@ const addMouseEventIfNotExists = ({ context }) => (pathElement, clickHandler, to
                     const clickEventExists = !!pathElement?.on('click');
                     pathElement.transition()
                         .duration(500)
-                        .attr("stroke-width", '6px');
+                        .attr("stroke-width", '4px');
 
                     if (clickEventExists) {
                         pathElement.style("cursor", "pointer");
@@ -336,7 +336,6 @@ const onEachPathHandler = ({ context }) => function (d, i, nodes) {
     const is2d = context.is2d();
     const colors = context.getColors();
     const gradientDirection = context.getGradientDirection();
-    const callbacks = context.getCallBacks();
     const d3Path = select(nodes[i]);
 
     const color = (is2d) ? colors[i] : colors;
@@ -348,7 +347,13 @@ const onEachPathHandler = ({ context }) => function (d, i, nodes) {
             .attr('stroke', color);
     } else if (fillMode === 'gradient') {
         applyGradient(id, d3Path, color, i + 1, gradientDirection);
-    }
+    }   
+};
+
+const onEachPathCallbacksHandler = ({ context }) => function (d, i, nodes) {
+
+    const callbacks = context.getCallBacks();
+    const d3Path = select(nodes[i]);
 
     const addMouseHandler = addMouseEventIfNotExists({ context });
     addMouseHandler(
@@ -357,7 +362,6 @@ const onEachPathHandler = ({ context }) => function (d, i, nodes) {
         (typeof callbacks?.tooltip === 'function') ? callbacks.tooltip : undefined,
         { index: i }
     );
-
 };
 
 /**
@@ -397,12 +401,14 @@ const drawPaths = ({
         const paths = rootSvg.selectAll('path')
             .data(definitions.paths);
 
+        const pathCallbackHandler = onEachPathCallbacksHandler({ context });
         const pathHandler = onEachPathHandler({ context });
         const getDataInfoHandler = getDataInfo({ context });
 
         // paths creation
         const enterPaths = paths.enter()
             .append('path')
+            .style("pointer-events", "none")
             .attr('d', d => d.path)
             .attr('data-info', getDataInfoHandler)
             .attr('opacity', 0)
@@ -413,10 +419,16 @@ const drawPaths = ({
             .duration(1000)
             .attr('opacity', 1)
             .each(pathHandler)
+            .on("end", function(d, i, nodes) {
+                const pathElement = select(this);
+                pathElement.style("pointer-events", "all");
+                pathCallbackHandler(d, i, nodes);
+            });
 
 
         // Update existing paths
         paths.merge(enterPaths)
+            .style("pointer-events", "none")
             .transition()
             .ease(easePolyInOut)
             .delay((d, i) => i * 100)
@@ -425,7 +437,12 @@ const drawPaths = ({
             .attr('data-info', getDataInfoHandler)
             .attr("stroke-width", '0')
             .attr('opacity', 1)
-            .each(pathHandler);
+            .each(pathHandler)
+            .on("end", function(d, i, nodes) {
+                const pathElement = select(this);
+                pathElement.style("pointer-events", "all");
+                pathCallbackHandler(d, i, nodes);
+            });
 
         // Exit and remove old paths
         paths.exit()
@@ -456,16 +473,15 @@ const onEachTextHandler = ({ offset }) => {
 
         const padding = 5;
         const bbox = this.getBBox();
+        const element = select(this);
 
         if (!offset.value) {
-            offset.value = +select(this).attr('y');
+            offset.value = +element.attr('y');
         }
 
         const newValue = bbox.height + offset.value + padding;
 
-        select(this)
-            .attr('y', newValue);
-
+        element.attr('y', newValue);
         offset.value += bbox.height + padding;
 
     };

@@ -5575,7 +5575,7 @@ var addMouseEventIfNotExists = function addMouseEventIfNotExists(_ref6) {
           var _pathElement = (0, _d3Selection.select)(this);
           if (_pathElement) {
             var _clickEventExists = !!(_pathElement !== null && _pathElement !== void 0 && _pathElement.on('click'));
-            _pathElement.transition().duration(500).attr("stroke-width", '6px');
+            _pathElement.transition().duration(500).attr("stroke-width", '4px');
             if (_clickEventExists) {
               _pathElement.style("cursor", "pointer");
             }
@@ -5613,7 +5613,6 @@ var onEachPathHandler = function onEachPathHandler(_ref7) {
     var is2d = context.is2d();
     var colors = context.getColors();
     var gradientDirection = context.getGradientDirection();
-    var callbacks = context.getCallBacks();
     var d3Path = (0, _d3Selection.select)(nodes[i]);
     var color = is2d ? colors[i] : colors;
     var fillMode = typeof color === 'string' || (color === null || color === void 0 ? void 0 : color.length) === 1 ? 'solid' : 'gradient';
@@ -5622,6 +5621,13 @@ var onEachPathHandler = function onEachPathHandler(_ref7) {
     } else if (fillMode === 'gradient') {
       applyGradient(id, d3Path, color, i + 1, gradientDirection);
     }
+  };
+};
+var onEachPathCallbacksHandler = function onEachPathCallbacksHandler(_ref8) {
+  var context = _ref8.context;
+  return function (d, i, nodes) {
+    var callbacks = context.getCallBacks();
+    var d3Path = (0, _d3Selection.select)(nodes[i]);
     var addMouseHandler = addMouseEventIfNotExists({
       context: context
     });
@@ -5634,8 +5640,8 @@ var onEachPathHandler = function onEachPathHandler(_ref7) {
 /**
  * Get the data nfo for each path
  */
-var getDataInfo = function getDataInfo(_ref8) {
-  var context = _ref8.context;
+var getDataInfo = function getDataInfo(_ref9) {
+  var context = _ref9.context;
   return function (d, i) {
     var is2d = context.is2d();
     var data = {
@@ -5655,9 +5661,9 @@ var getDataInfo = function getDataInfo(_ref8) {
 /**
  * Draw the SVG paths
  */
-var drawPaths = exports.drawPaths = function drawPaths(_ref9) {
-  var context = _ref9.context,
-    definitions = _ref9.definitions;
+var drawPaths = exports.drawPaths = function drawPaths(_ref10) {
+  var context = _ref10.context,
+    definitions = _ref10.definitions;
   var id = context.getId();
   var rootSvg = getRootSvgGroup(id);
   updateRootSVG({
@@ -5665,6 +5671,9 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref9) {
   });
   if (definitions && rootSvg) {
     var paths = rootSvg.selectAll('path').data(definitions.paths);
+    var pathCallbackHandler = onEachPathCallbacksHandler({
+      context: context
+    });
     var pathHandler = onEachPathHandler({
       context: context
     });
@@ -5673,18 +5682,26 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref9) {
     });
 
     // paths creation
-    var enterPaths = paths.enter().append('path').attr('d', function (d) {
+    var enterPaths = paths.enter().append('path').style("pointer-events", "none").attr('d', function (d) {
       return d.path;
     }).attr('data-info', getDataInfoHandler).attr('opacity', 0).attr("stroke-width", '0').transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
       return i * 100;
-    }).duration(1000).attr('opacity', 1).each(pathHandler);
+    }).duration(1000).attr('opacity', 1).each(pathHandler).on("end", function (d, i, nodes) {
+      var pathElement = (0, _d3Selection.select)(this);
+      pathElement.style("pointer-events", "all");
+      pathCallbackHandler(d, i, nodes);
+    });
 
     // Update existing paths
-    paths.merge(enterPaths).transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
+    paths.merge(enterPaths).style("pointer-events", "none").transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
       return i * 100;
     }).duration(1000).attr('d', function (d) {
       return d.path;
-    }).attr('data-info', getDataInfoHandler).attr("stroke-width", '0').attr('opacity', 1).each(pathHandler);
+    }).attr('data-info', getDataInfoHandler).attr("stroke-width", '0').attr('opacity', 1).each(pathHandler).on("end", function (d, i, nodes) {
+      var pathElement = (0, _d3Selection.select)(this);
+      pathElement.style("pointer-events", "all");
+      pathCallbackHandler(d, i, nodes);
+    });
 
     // Exit and remove old paths
     paths.exit().transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
@@ -5702,23 +5719,24 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref9) {
 /**
  * SVG texts positioning according to the selected direction
  */
-var onEachTextHandler = function onEachTextHandler(_ref10) {
-  var offset = _ref10.offset;
+var onEachTextHandler = function onEachTextHandler(_ref11) {
+  var offset = _ref11.offset;
   return function (d, i) {
     var padding = 5;
     var bbox = this.getBBox();
+    var element = (0, _d3Selection.select)(this);
     if (!offset.value) {
-      offset.value = +(0, _d3Selection.select)(this).attr('y');
+      offset.value = +element.attr('y');
     }
     var newValue = bbox.height + offset.value + padding;
-    (0, _d3Selection.select)(this).attr('y', newValue);
+    element.attr('y', newValue);
     offset.value += bbox.height + padding;
   };
 };
 
 // Function to update line positions
-var updateLinePositions = function updateLinePositions(_ref11) {
-  var context = _ref11.context;
+var updateLinePositions = function updateLinePositions(_ref12) {
+  var context = _ref12.context;
   var _context$getDimension2 = context.getDimensions({
       context: context,
       margin: false
@@ -5741,8 +5759,8 @@ var updateLinePositions = function updateLinePositions(_ref11) {
 /**
  * Handle the SVG text display on the graph
  */
-var drawInfo = exports.drawInfo = function drawInfo(_ref12) {
-  var context = _ref12.context;
+var drawInfo = exports.drawInfo = function drawInfo(_ref13) {
+  var context = _ref13.context;
   var id = context.getId();
   var margin = context.getMargin();
   var info = context.getInfo();
@@ -5884,8 +5902,8 @@ var applyGradient = function applyGradient(id, d3Path, colors, index, gradientDi
   // Apply the gradient to the path
   d3Path.attr('fill', "url(\"#".concat(gradientId, "\")")).attr('stroke', "url(\"#".concat(gradientId, "\")"));
 };
-var destroySVG = exports.destroySVG = function destroySVG(_ref13) {
-  var context = _ref13.context;
+var destroySVG = exports.destroySVG = function destroySVG(_ref14) {
+  var context = _ref14.context;
   return function () {
     var svg = getRootSvg(context.getId());
     if (svg) {
