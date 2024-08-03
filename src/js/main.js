@@ -43,11 +43,17 @@ class FunnelGraph {
         this.gradientDirection = (options.gradientDirection && options.gradientDirection === 'vertical')
             ? 'vertical'
             : 'horizontal';
-
+            
+        const availablePctModes = ['max', 'previous', 'first'];
+        this.setPctMode((options.hasOwnProperty("pctMode") && availablePctModes.includes(options.pctMode)) 
+            ? options.pctMode 
+            : 'max');
         this.setResponsive(options.hasOwnProperty("responsive") ? options.responsive : false);
         this.setDetails(options.hasOwnProperty('details') ? options.details : true);
         this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
-        this.getDirection(options?.direction);
+        this.setDirection((options.hasOwnProperty('direction') && options.direction === 'horizontal') 
+            ? 'horizontal' 
+            : 'vertical');
         this.setValues(options?.data?.values || []);
         this.setLabels(options?.data?.labels || []);
         this.setSubLabels(options?.data?.subLabels || []);
@@ -55,6 +61,12 @@ class FunnelGraph {
         this.colors = options?.data?.colors || getDefaultColors(this.is2d() ? this.getSubDataSize() : 2);
         this.displayPercent = options.displayPercent || false;
 
+        // Defining colors
+        this.setBackgroundColor(this.validateHexColor(options.backgroundColor) ? options.backgroundColor : 'transparent');
+        this.setTitleColor(this.validateHexColor(options.titleColor) ? options.titleColor : '#05df9d');
+        this.setLabelColor(this.validateHexColor(options.labelColor) ? options.labelColor : '#ffffff');
+        this.setPercentageColor(this.validateHexColor(options.percentageColor) ? options.percentageColor : '#9896dc');
+        
         this.margin = { top: 120, right: 60, bottom: 60, left: 60, text: 10 };
         this.setMargin(options?.margin);
 
@@ -84,6 +96,10 @@ class FunnelGraph {
         this.linePositions = [];
     }
 
+    validateHexColor(hex) {
+        return /^#([0-9A-F]{3}){1,2}$/i.test(hex);
+    }
+
     destroy() {
         const destroy = destroySVG({ context: this.getContext() });
         if (destroy) {
@@ -101,6 +117,10 @@ class FunnelGraph {
 
     showDetails() {
         return this.details;
+    }
+
+    showPctMode() {
+        return this.pctMode;
     }
 
     getContainerSelector(){
@@ -158,6 +178,42 @@ class FunnelGraph {
 
     setDetails(bool) {
         this.details = bool;
+    }
+
+    setPctMode(mode) {
+        this.pctMode = mode;
+    }
+
+    setBackgroundColor(backgroundColor) {
+        this.backgroundColor = backgroundColor;
+    }
+
+    getBackgroundColor() {
+        return this.backgroundColor;
+    }
+
+    setTitleColor(titleColor) {
+        this.titleColor = titleColor;
+    }
+
+    getTitleColor() {
+        return this.titleColor;
+    }
+
+    setLabelColor(labelColor) {
+        this.labelColor = labelColor;
+    }
+
+    getLabelColor() {
+        return this.labelColor;
+    }
+
+    setPercentageColor(percentageColor) {
+        this.percentageColor = percentageColor;
+    }
+
+    getPercentageColor() {
+        return this.percentageColor;
     }
 
     /**
@@ -310,8 +366,24 @@ class FunnelGraph {
             values = [...this.values];
         }
 
-        const max = Math.max(...values);
-        return values.map(value => (value === 0 ? 0 : roundPoint(value * 100 / max)));
+        if (this.pctMode === 'max') {
+            // Calculate percentage relative to the maximum value
+            const max = Math.max(...values);
+            values = values.map(value => (value === 0 ? 0 : roundPoint(value * 100 / max)));
+        } else if (this.pctMode === 'previous') {
+            // Calculate percentage relative to the previous value
+            values = values.map((value, index) => {
+                if (index === 0) return 100; // The first item relative to itself is always 100%
+                const previousValue = values[index - 1];
+                return (previousValue === 0 ? 0 : roundPoint(value * 100 / previousValue));
+            });
+        } else if (this.pctMode === 'first') {
+            // Calculate percentage relative to the first value
+            const firstValue = values[0];
+            values = values.map(value => (firstValue === 0 ? 0 : roundPoint(value * 100 / firstValue)));
+        }
+
+        return values;
     }
 
     makeVertical(force = false) {
@@ -440,6 +512,7 @@ class FunnelGraph {
             crossAxisPoints
         });
 
+
         drawPaths({
             context: this.getContext(),
             definitions,
@@ -449,6 +522,7 @@ class FunnelGraph {
         drawInfo({
             context: this.getContext()
         });
+
     }
 
     /**
@@ -517,6 +591,10 @@ class FunnelGraph {
             if (typeof d.colors !== 'undefined') {
                 // Update colors if specified, or use default colors as a fallback
                 this.colors = d.colors || getDefaultColors(this.is2d() ? this.getSubDataSize() : 2);
+            }
+
+            if (typeof d.pctMode !== 'undefined') {
+                this.setPctMode(d.pctMode);
             }
 
             // Calculate percentages for the graph based on the updated or existing values

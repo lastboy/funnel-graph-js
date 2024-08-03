@@ -1,55 +1,13 @@
 # D3 Funnel Graph 
 
-![npm](https://img.shields.io/npm/v/d3-funnel-graph.svg)
-![GitHub file size in bytes](https://img.shields.io/github/size/lastboy/funnel-graph-js/dist/js/funnel-graph.min.js.svg)
-![GitHub](https://img.shields.io/github/license/lastboy/funnel-graph-js.svg)
-![GitHub last commit](https://img.shields.io/github/last-commit/lastboy/funnel-graph-js.svg)
-
 Funnel Graph JS is a library for generating funnel charts using SVG, utilizing [D3 JS](https://d3js.org/)  
 It supports horizontal and vertical funnel charts, offers options for solid colors and gradients, and can generate two-dimensional funnel charts.
 
 
-This project is a fork of the [funnel-graph-js](https://github.com/greghub/funnel-graph-js) project initiated by greghub. It has been entirely refactored using [D3.js](https://d3js.org/), although the core code that creates the paths remains unchanged.   
+This project is a fork of the [funnel-graph-js](https://github.com/lastboy/funnel-graph-js) project forked by lastboy. 
 The funnel graph is created as a single SVG unit, without combining any HTML elements except for the tooltip. This approach ensures a single responsive graph that can be dynamically updated and resized without needing to recreate the graph.   
 
-New features have been added:  
-* No need to recreate the graph on update
-* Responsive graph including the text informations and dividers
-* Text information can be displayed or hidden
-* Tooltip over each area path
-* Clickable areas with configurable callbacks
-  
-[![Demo](https://i.imgur.com/mmb1xCr.gif)](https://codepen.io/arik-test/pen/KKLZrVe)
 
-## Support for Vue, React, and Other Frameworks
-There's no need to use the specific Vue project: [vue-funnel-graph-js](https://github.com/greghub/vue-funnel-graph-js)  
-This project supports dynamic data and configuration updates and is very simple to integrate with any front-end JavaScript framework, including Vue, React, and others.
-
-Vue2 Example: https://codepen.io/arik-test/pen/qBGYjyG
-
-## Build
-```
-> yarn
-> yarn build 
-```
-
-## Installation
-
-```
-npm i d3-funnel-graph
-```
-
-JS:
-```js
-import FunnelGraph from 'd3-funnel-graph';
-// or import "d3-funnel-graph/dist/css/funnel-graph.min.css"
-```
-
-SCSS:
-```
-@import "d3-funnel-graph/dist/scss/variables.scss"
-@import "d3-funnel-graph/dist/scss/d3.scss"
-```
 
 ## Usage
 
@@ -60,6 +18,7 @@ var graph = new FunnelGraph({
     data: {...},
     displayPercent: true,
     direction: 'horizontal',
+    pctMode: 'max',
     width: 800,
     height: 300,
     callbacks: {
@@ -67,7 +26,11 @@ var graph = new FunnelGraph({
             console.log(metadata);
         }
     },
-    margin: { top: 120, right: 60, bottom: 60, left: 60, text: 10 }
+    margin: { top: 120, right: 60, bottom: 60, left: 60, text: 10 },
+    backgroundColor: 'transparent',
+    titleColor: '#05df9d',
+    labelColor: '#000000',
+    percentageColor: '#592EC2',
 });
 
 graph.draw();
@@ -103,6 +66,11 @@ graph.draw();
     **Note:** The tooltip display depends on the details display so it can calculate its range according to the dividers.
 * **responsive** when true the SVG's width and height will be set to 100%. And the configured width and height will be set in the viewBox.
     Make sure to set the parent DIVs elements to be 100% as well for resized graph
+* **pctMode** specify how percentages are calculated for each stage in the funnel. `max` uses the highest stage value as denominator. `previous` uses the previous stage value as denominator. `first` uses the first stage value as denominator.
+* **backgroundColor** specify the background color for the visualization.
+* **titleColor** specify the text color for title labels (name of each stage).
+* **labelColor** specify the text color for the value labels.
+* **percentageColor** specify the text color for the percentage labels.
 
 ## Updatable FunnelGraph configuration
 * width
@@ -114,30 +82,11 @@ graph.draw();
 * colors
 * details
 * tooltip
+* pctMode
+* backgroundColor
+* titleColor
+* percentageColor
 
-
-## Other Download and Import Options
-
-Go to the code section of the repository and download the ZIP file.    
-Then, Use the provided resources according to your environment. You can use them directly in plain HTML or by importing (ES6+) them into your project.
-
-CDN:
-
-```html
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/lastboy/funnel-graph-js@master/dist/css/funnel-graph.min.css">
-
-<script src="https://cdn.jsdelivr.net/gh/lastboy/funnel-graph-js@master/dist/js/funnel-graph.min.js"></script>
-```
-
-CSS:
-```html
-<link rel="stylesheet" type="text/css" href="../dist/css/funnel-graph.min.css">
-```
-
-JS:
-```html
-<script src="../dist/js/funnel-graph.min.js"></script>
-```
 
 ## Responsive Graph
 * In order to have a responsive graph the wrapper DIVs should have width/height of 100%

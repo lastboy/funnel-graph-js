@@ -114,6 +114,9 @@
             <button id="showTooltip">Show Tooltip</button>
             <button id="showDetails">Show Details</button>
             <button id="setResponsive">Toggle Responsive</button>
+            <button id="setPctMax">Percentages Max</button>
+            <button id="setPctPrevious">Percentages Previous</button>
+            <button id="setPctFirst">Percentages First</button>
         </div>
         <div style="width: 100%">
             <div class="flex funnel-wrapper col">
@@ -139,7 +142,7 @@
 
         const dataExample1 = {
             colors: ['#FFB178', '#FF3C8E'],
-            values: [11000, 3000, 240]
+            values: [11000, 1500, 3000, 240]
         };
 
         const dataExample2 = {
@@ -169,7 +172,7 @@
             gradientDirection: 'horizontal',
             data: dataExample3,
             displayPercent: true,
-            direction: 'horizontal',
+            direction: 'vertical',
             width: 800,
             height: 300,
             subLabelValue: 'raw',
@@ -182,8 +185,16 @@
                 //     console.log("tooltip handler", metadata);
                 // }
             },
-            margin: { top: 120, right: 60, bottom: 60, left: 60, text: 10 },
-            responsive
+            
+            
+            // COLOR ATTRIBUTES
+            // backgroundColor: '#ffffff',
+            // titleColor: '#ffffff',
+            // labelColor: '#ffffff',
+            // percentageColor: '#555555',
+
+            margin: { top: 10, right: 10, bottom: 10, left: 10, text: 1 },
+            responsive: responsive
         });
 
         graph.draw();
@@ -255,6 +266,15 @@
         document.querySelector('#setResponsive').addEventListener('click', function () {
             responsive = !responsive;
             graph.updateData({ responsive });
+        });
+        document.querySelector('#setPctMax').addEventListener('click', function () {
+            graph.updateData({ pctMode: 'max' });
+        });
+        document.querySelector('#setPctPrevious').addEventListener('click', function () {
+            graph.updateData({ pctMode: 'previous' });
+        });
+        document.querySelector('#setPctFirst').addEventListener('click', function () {
+            graph.updateData({ pctMode: 'first' });
         });
 
     </script>

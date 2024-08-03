@@ -70,6 +70,7 @@ const createRootSVG = ({ context }) => {
     const height = context.getHeight();
     const margin = context.getMargin();
     const containerSelector = context.getContainerSelector()
+    const backgroundColor = context.getBackgroundColor()
 
     const container = select(containerSelector);
 
@@ -88,7 +89,8 @@ const createRootSVG = ({ context }) => {
         .attr('width', responsive ? "100%" : width)
         .attr('height', responsive ? "100%" : height)
         .attr('viewBox', `0 0 ${width} ${height}`)
-        .attr('preserveAspectRatio', 'xMidYMin meet');
+        .attr('preserveAspectRatio', 'xMidYMin meet')
+        .attr('style', 'background-color:' + backgroundColor);
 
     getRootSvgGroup(id, margin);
 
@@ -526,6 +528,9 @@ const drawInfo = ({
         const width = context.getWidth();
         const height = context.getHeight();
         const vertical = context.isVertical();
+        const titleColor = context.getTitleColor();
+        const labelColor = context.getLabelColor();
+        const percentageColor = context.getPercentageColor();
         const textGap = (info.length + 1);
         const noMarginHeight = height - margin.top - margin.bottom;
         const noMarginWidth = width - margin.left - margin.right;
@@ -551,6 +556,7 @@ const drawInfo = ({
                                 .attr("class", "label__value")
                                 .attr('x', x)
                                 .attr('y', y)
+                                .attr('style', 'fill:' + labelColor)
                                 .text(d => d.value)
                                 .each(textHandlerValue);
 
@@ -559,6 +565,7 @@ const drawInfo = ({
                                 .attr("class", "label__title")
                                 .attr('x', x)
                                 .attr('y', y)
+                                .attr('style', 'fill:' + titleColor)
                                 .text(d => d.label)
                                 .each(textHandlerTitle);
 
@@ -567,6 +574,7 @@ const drawInfo = ({
                                 .attr("class", "label__percentage")
                                 .attr('x', x)
                                 .attr('y', y)
+                                .attr('style', 'fill:' + percentageColor)
                                 .text(d => d.percentage)
                                 .each(textHandlerPercentage);
                         })
@@ -582,6 +590,7 @@ const drawInfo = ({
                     select(this).select(".label__value")
                         .attr('x', x)
                         .attr('y', y)
+                        .attr('style', 'fill:' + labelColor)
                         .text(d => d.value)
                         .style('opacity', 0.5)
                         .transition()
@@ -595,6 +604,7 @@ const drawInfo = ({
                     select(this).select(".label__title")
                         .attr('x', x)
                         .attr('y', y)
+                        .attr('style', 'fill:' + titleColor)
                         .text(d => d.label)
                         .each(textHandlerTitle);
 
@@ -602,6 +612,7 @@ const drawInfo = ({
                     select(this).select(".label__percentage")
                         .attr('x', x)
                         .attr('y', y)
+                        .attr('style', 'fill:' + percentageColor)
                         .text(d => d.percentage)
                         .each(textHandlerPercentage);
 

@@ -5387,13 +5387,14 @@ var createRootSVG = exports.createRootSVG = function createRootSVG(_ref) {
   var height = context.getHeight();
   var margin = context.getMargin();
   var containerSelector = context.getContainerSelector();
+  var backgroundColor = context.getBackgroundColor();
   var container = (0, _d3Selection.select)(containerSelector);
   var bodySelection = (0, _d3Selection.select)("body");
   var tooltipParentElement = bodySelection.empty() ? container : bodySelection;
 
   // add tooltip element
   tooltipParentElement.append('div').attr('id', "d3-funnel-js-tooltip").attr('class', 'd3-funnel-js-tooltip');
-  var d3Svg = container.append('svg').attr('class', 'd3-funnel-js').attr('id', id).attr('width', responsive ? "100%" : width).attr('height', responsive ? "100%" : height).attr('viewBox', "0 0 ".concat(width, " ").concat(height)).attr('preserveAspectRatio', 'xMidYMin meet');
+  var d3Svg = container.append('svg').attr('class', 'd3-funnel-js').attr('id', id).attr('width', responsive ? "100%" : width).attr('height', responsive ? "100%" : height).attr('viewBox', "0 0 ".concat(width, " ").concat(height)).attr('preserveAspectRatio', 'xMidYMin meet').attr('style', 'background-color:' + backgroundColor);
   getRootSvgGroup(id, margin);
   return d3Svg;
 };
@@ -5774,6 +5775,9 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref13) {
     var width = context.getWidth();
     var height = context.getHeight();
     var vertical = context.isVertical();
+    var titleColor = context.getTitleColor();
+    var labelColor = context.getLabelColor();
+    var percentageColor = context.getPercentageColor();
     var textGap = info.length + 1;
     var noMarginHeight = height - margin.top - margin.bottom;
     var noMarginWidth = width - margin.left - margin.right;
@@ -5792,19 +5796,19 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref13) {
           offset: offsetValue
         });
         var g = (0, _d3Selection.select)(this);
-        g.append("text").attr("class", "label__value").attr('x', x).attr('y', y).text(function (d) {
+        g.append("text").attr("class", "label__value").attr('x', x).attr('y', y).attr('style', 'fill:' + labelColor).text(function (d) {
           return d.value;
         }).each(textHandlerValue);
         var textHandlerTitle = onEachTextHandler({
           offset: offsetValue
         });
-        g.append("text").attr("class", "label__title").attr('x', x).attr('y', y).text(function (d) {
+        g.append("text").attr("class", "label__title").attr('x', x).attr('y', y).attr('style', 'fill:' + titleColor).text(function (d) {
           return d.label;
         }).each(textHandlerTitle);
         var textHandlerPercentage = onEachTextHandler({
           offset: offsetValue
         });
-        g.append("text").attr("class", "label__percentage").attr('x', x).attr('y', y).text(function (d) {
+        g.append("text").attr("class", "label__percentage").attr('x', x).attr('y', y).attr('style', 'fill:' + percentageColor).text(function (d) {
           return d.percentage;
         }).each(textHandlerPercentage);
       });
@@ -5818,19 +5822,19 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref13) {
         var textHandlerValue = onEachTextHandler({
           offset: offsetValue
         });
-        (0, _d3Selection.select)(this).select(".label__value").attr('x', x).attr('y', y).text(function (d) {
+        (0, _d3Selection.select)(this).select(".label__value").attr('x', x).attr('y', y).attr('style', 'fill:' + labelColor).text(function (d) {
           return d.value;
         }).style('opacity', 0.5).transition().duration(400).ease(_d3Ease.easePolyInOut).style('opacity', 1).each(textHandlerValue);
         var textHandlerTitle = onEachTextHandler({
           offset: offsetValue
         });
-        (0, _d3Selection.select)(this).select(".label__title").attr('x', x).attr('y', y).text(function (d) {
+        (0, _d3Selection.select)(this).select(".label__title").attr('x', x).attr('y', y).attr('style', 'fill:' + titleColor).text(function (d) {
           return d.label;
         }).each(textHandlerTitle);
         var textHandlerPercentage = onEachTextHandler({
           offset: offsetValue
         });
-        (0, _d3Selection.select)(this).select(".label__percentage").attr('x', x).attr('y', y).text(function (d) {
+        (0, _d3Selection.select)(this).select(".label__percentage").attr('x', x).attr('y', y).attr('style', 'fill:' + percentageColor).text(function (d) {
           return d.percentage;
         }).each(textHandlerPercentage);
       });
@@ -5941,6 +5945,7 @@ function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbol
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _readOnlyError(r) { throw new TypeError('"' + r + '" is read-only'); }
 function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
 function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
 function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
@@ -5980,16 +5985,24 @@ var FunnelGraph = /*#__PURE__*/function () {
     _classCallCheck(this, FunnelGraph);
     this.id = this.generateId(), this.containerSelector = options.container;
     this.gradientDirection = options.gradientDirection && options.gradientDirection === 'vertical' ? 'vertical' : 'horizontal';
+    var availablePctModes = ['max', 'previous', 'first'];
+    this.setPctMode(options.hasOwnProperty("pctMode") && availablePctModes.includes(options.pctMode) ? options.pctMode : 'max');
     this.setResponsive(options.hasOwnProperty("responsive") ? options.responsive : false);
     this.setDetails(options.hasOwnProperty('details') ? options.details : true);
     this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
-    this.getDirection(options === null || options === void 0 ? void 0 : options.direction);
+    this.setDirection(options.hasOwnProperty('direction') && options.direction === 'horizontal' ? 'horizontal' : 'vertical');
     this.setValues((options === null || options === void 0 || (_options$data = options.data) === null || _options$data === void 0 ? void 0 : _options$data.values) || []);
     this.setLabels((options === null || options === void 0 || (_options$data2 = options.data) === null || _options$data2 === void 0 ? void 0 : _options$data2.labels) || []);
     this.setSubLabels((options === null || options === void 0 || (_options$data3 = options.data) === null || _options$data3 === void 0 ? void 0 : _options$data3.subLabels) || []);
     this.percentages = this.createPercentages();
     this.colors = (options === null || options === void 0 || (_options$data4 = options.data) === null || _options$data4 === void 0 ? void 0 : _options$data4.colors) || (0, _colors.getDefaultColors)(this.is2d() ? this.getSubDataSize() : 2);
     this.displayPercent = options.displayPercent || false;
+
+    // Defining colors
+    this.setBackgroundColor(this.validateHexColor(options.backgroundColor) ? options.backgroundColor : 'transparent');
+    this.setTitleColor(this.validateHexColor(options.titleColor) ? options.titleColor : '#05df9d');
+    this.setLabelColor(this.validateHexColor(options.labelColor) ? options.labelColor : '#ffffff');
+    this.setPercentageColor(this.validateHexColor(options.percentageColor) ? options.percentageColor : '#9896dc');
     this.margin = {
       top: 120,
       right: 60,
@@ -6019,6 +6032,11 @@ var FunnelGraph = /*#__PURE__*/function () {
     this.linePositions = [];
   }
   return _createClass(FunnelGraph, [{
+    key: "validateHexColor",
+    value: function validateHexColor(hex) {
+      return /^#([0-9A-F]{3}){1,2}$/i.test(hex);
+    }
+  }, {
     key: "destroy",
     value: function destroy() {
       var destroy = (0, _d.destroySVG)({
@@ -6042,6 +6060,11 @@ var FunnelGraph = /*#__PURE__*/function () {
     key: "showDetails",
     value: function showDetails() {
       return this.details;
+    }
+  }, {
+    key: "showPctMode",
+    value: function showPctMode() {
+      return this.pctMode;
     }
   }, {
     key: "getContainerSelector",
@@ -6110,6 +6133,51 @@ var FunnelGraph = /*#__PURE__*/function () {
     key: "setDetails",
     value: function setDetails(bool) {
       this.details = bool;
+    }
+  }, {
+    key: "setPctMode",
+    value: function setPctMode(mode) {
+      this.pctMode = mode;
+    }
+  }, {
+    key: "setBackgroundColor",
+    value: function setBackgroundColor(backgroundColor) {
+      this.backgroundColor = backgroundColor;
+    }
+  }, {
+    key: "getBackgroundColor",
+    value: function getBackgroundColor() {
+      return this.backgroundColor;
+    }
+  }, {
+    key: "setTitleColor",
+    value: function setTitleColor(titleColor) {
+      this.titleColor = titleColor;
+    }
+  }, {
+    key: "getTitleColor",
+    value: function getTitleColor() {
+      return this.titleColor;
+    }
+  }, {
+    key: "setLabelColor",
+    value: function setLabelColor(labelColor) {
+      this.labelColor = labelColor;
+    }
+  }, {
+    key: "getLabelColor",
+    value: function getLabelColor() {
+      return this.labelColor;
+    }
+  }, {
+    key: "setPercentageColor",
+    value: function setPercentageColor(percentageColor) {
+      this.percentageColor = percentageColor;
+    }
+  }, {
+    key: "getPercentageColor",
+    value: function getPercentageColor() {
+      return this.percentageColor;
     }
 
     /**
@@ -6294,10 +6362,27 @@ var FunnelGraph = /*#__PURE__*/function () {
       } else {
         values = _toConsumableArray(this.values);
       }
-      var max = Math.max.apply(Math, _toConsumableArray(values));
-      return values.map(function (value) {
-        return value === 0 ? 0 : (0, _number.roundPoint)(value * 100 / max);
-      });
+      if (this.pctMode === 'max') {
+        // Calculate percentage relative to the maximum value
+        var max = Math.max.apply(Math, _toConsumableArray(values));
+        values = values.map(function (value) {
+          return value === 0 ? 0 : (0, _number.roundPoint)(value * 100 / max);
+        });
+      } else if (this.pctMode === 'previous') {
+        // Calculate percentage relative to the previous value
+        values = values.map(function (value, index) {
+          if (index === 0) return 100; // The first item relative to itself is always 100%
+          var previousValue = values[index - 1];
+          return previousValue === 0 ? 0 : (0, _number.roundPoint)(value * 100 / previousValue);
+        });
+      } else if (this.pctMode === 'first') {
+        // Calculate percentage relative to the first value
+        var firstValue = values[0];
+        values = values.map(function (value) {
+          return firstValue === 0 ? 0 : (0, _number.roundPoint)(value * 100 / firstValue);
+        });
+      }
+      return values;
     }
   }, {
     key: "makeVertical",
@@ -6512,6 +6597,9 @@ var FunnelGraph = /*#__PURE__*/function () {
         if (typeof d.colors !== 'undefined') {
           // Update colors if specified, or use default colors as a fallback
           this.colors = d.colors || (0, _colors.getDefaultColors)(this.is2d() ? this.getSubDataSize() : 2);
+        }
+        if (typeof d.pctMode !== 'undefined') {
+          this.setPctMode(d.pctMode);
         }
 
         // Calculate percentages for the graph based on the updated or existing values
@@ -6802,10 +6890,10 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.normalizeArray = void 0;
-var _normalizeArray = function _normalizeArray(arr) {
+var _normalizeArray2 = function _normalizeArray(arr) {
   // Helper function to check if a single cell is considered empty
   var isEmpty = function isEmpty(el) {
-    return Array.isArray(el) ? _normalizeArray(el) : el === null || el === undefined;
+    return Array.isArray(el) ? _normalizeArray2(el) : el === null || el === undefined;
   };
 
   // Check if every cell in the array is empty
@@ -6815,7 +6903,7 @@ var normalizeArray = exports.normalizeArray = function normalizeArray(arr) {
   // If the array is empty, return an empty array
   var nArray = [];
   try {
-    nArray = _normalizeArray(arr) ? [] : arr;
+    nArray = _normalizeArray2(arr) ? [] : arr;
   } catch (e) {
     console.warn("normalizing array function failed with errors: ", e);
   }
