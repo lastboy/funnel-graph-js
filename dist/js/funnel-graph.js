@@ -5914,7 +5914,7 @@ var destroySVG = exports.destroySVG = function destroySVG(_ref14) {
       }
 
       // destroy all in specific path listeners
-      var paths = rootSvg.selectAll('path');
+      var paths = svg.selectAll('path');
       if (paths) {
         paths.on('.all', null);
       }

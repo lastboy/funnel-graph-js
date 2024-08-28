@@ -711,7 +711,7 @@ const destroySVG = ({ context }) => () => {
         }
 
         // destroy all in specific path listeners
-        const paths = rootSvg.selectAll('path');
+        const paths = svg.selectAll('path');
         if (paths) {
             paths.on('.all', null);
         }
