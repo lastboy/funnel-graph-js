@@ -1,0 +1,20 @@
+<a href="example.html">Back</a>
+
+<h1>
+    Drill Down Page
+</h1>
+<p>You click on area: <span id="indexParam"></span> </p>
+
+
+<script>
+
+    function getQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        const index = params.get('index');
+        return { index };
+    }
+
+    const params = getQueryParams();
+    document.getElementById('indexParam').textContent = `Index: ${params.index}`;
+
+</script>

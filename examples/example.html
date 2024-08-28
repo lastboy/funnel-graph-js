@@ -176,6 +176,7 @@
             callbacks: {
                 click: (event, metadata) => {
                     console.log("click handler", metadata);
+                    window.location.href = `example-details.html?index=${metadata.index}`;
                 },
                 // adding a tooltip handler instead of the ootb tooltip display
                 // tooltip: (event, metadata) => {

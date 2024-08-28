@@ -5907,11 +5907,28 @@ var destroySVG = exports.destroySVG = function destroySVG(_ref14) {
   return function () {
     var svg = getRootSvg(context.getId());
     if (svg) {
+      // destroy tooltip
+      var tooltipElement = (0, _d3Selection.select)("#d3-funnel-js-tooltip");
+      if (tooltipElement) {
+        tooltipElement.remove();
+      }
+
+      // destroy all in specific path listeners
+      var paths = rootSvg.selectAll('path');
+      if (paths) {
+        paths.on('.all', null);
+      }
+
       // Stop any ongoing transitions
       svg.selectAll('*').interrupt();
 
+      // remove all other listeners
+      svg.selectAll('*').on('.all', null);
+
       // Remove all SVG elements
       svg.selectAll('*').remove();
+
+      // remove the svg itself
       svg.remove();
     }
   };

@@ -703,11 +703,29 @@ const destroySVG = ({ context }) => () => {
     const svg = getRootSvg(context.getId());
 
     if (svg) {
+
+        // destroy tooltip
+        const tooltipElement = select("#d3-funnel-js-tooltip");
+        if (tooltipElement) {
+            tooltipElement.remove();
+        }
+
+        // destroy all in specific path listeners
+        const paths = rootSvg.selectAll('path');
+        if (paths) {
+            paths.on('.all', null);
+        }
+
         // Stop any ongoing transitions
         svg.selectAll('*').interrupt();
 
+        // remove all other listeners
+        svg.selectAll('*').on('.all', null);
+
         // Remove all SVG elements
         svg.selectAll('*').remove();
+
+        // remove the svg itself
         svg.remove();
     }
 }
