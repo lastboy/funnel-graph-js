@@ -12,6 +12,10 @@
   height: 30px;
   transition: opacity 0.2s;
   font-family: "Open Sans", sans-serif;
+  font-size: 1em;
+  font-weight: normal;
+  line-height: 1em;
+  text-align: left;
   padding: 4px;
   border-radius: 5px;
   border: 1px solid #000000;
@@ -20,20 +24,33 @@
   z-index: 1000; }
 
 .d3-funnel-js {
+  font-family: "Open Sans", sans-serif;
+  font-size: 1em;
+  font-weight: normal;
+  line-height: 1em;
+  text-align: left;
   display: block;
-  margin: auto;
-  font-family: "Open Sans", sans-serif; }
+  margin: auto; }
   .d3-funnel-js .label__group .label__value {
+    font-family: "Open Sans", sans-serif;
     font-size: 1.5em;
-    fill: #fff;
-    line-height: 18px; }
+    font-weight: normal;
+    line-height: 18px;
+    text-align: left;
+    fill: #fff; }
   .d3-funnel-js .label__group .label__title {
+    font-family: "Open Sans", sans-serif;
     font-size: 1em;
     font-weight: bold;
+    line-height: 1em;
+    text-align: left;
     fill: #05df9d; }
   .d3-funnel-js .label__group .label__percentage {
+    font-family: "Open Sans", sans-serif;
     font-size: 1em;
-    font-weight: bold;
+    font-weight: normal;
+    line-height: 1em;
+    text-align: left;
     fill: #9896dc; }
   .d3-funnel-js .divider {
     stroke: #9896dc;

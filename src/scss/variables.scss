@@ -1,25 +1,76 @@
-$font-family: "Open Sans", sans-serif;
-
 // colors
 $primary: #05df9d;
 $secondary: #9896dc;
 
+$font-family-default: "Open Sans", sans-serif;
+
+$font-main: (
+    font-family: $font-family-default,
+    font-size: 1em,
+    font-weight: normal,
+    font-line-height: 1em,
+    font-text-align: left
+);
+
+$font-tooltip: (
+    font-family: map-get($font-main, font-family),
+    font-size: map-get($font-main, font-size),
+    font-weight: map-get($font-main, font-weight),
+    font-line-height: map-get($font-main, font-line-height),
+    font-text-align: map-get($font-main, font-text-align)
+);
+
+// labels fonts
+
+// @deprecated use $*-color instead
 $label-title: $primary;
 $label-value: #fff;
 $label-per: $secondary;
 
-// fonts
+$label-title-color: $label-title;
+$label-value-color: $label-value;
+$label-per-color: $label-per;
+
 $label-title-font-size: 1em; 
 $label-value-font-size: 1.5em; 
 $label-per-font-size: 1em; 
+
+$font-label-title: (
+    font-family: map-get($font-main, font-family),
+    font-size: $label-title-font-size,
+    font-weight: bold,
+    font-line-height: map-get($font-main, font-line-height),
+    font-text-align: map-get($font-main, font-text-align)
+);
+
+$font-label-value: (
+    font-family: map-get($font-main, font-family),
+    font-size: $label-value-font-size,
+    font-weight: map-get($font-main, font-weight),
+    font-line-height: 18px,
+    font-text-align: map-get($font-main, font-text-align)
+);
+
+$font-label-percentage: (
+    font-family: map-get($font-main, font-family),
+    font-size: $label-per-font-size,
+    font-weight: map-get($font-main, font-weight),
+    font-line-height: map-get($font-main, font-line-height),
+    font-text-align: map-get($font-main, font-text-align)
+);
  
+// tooltip
+
+// @deprecated use $tooltip-color instead
+$tooltip: #f0f0f0;
 $tooltip-border: #000000;
 $tooltip-bg: #333333;
-$tooltip: #f0f0f0;
+$tooltip-color: $tooltip;
 $tooltip-border: 1px solid #000000;
 $tooltip-border-radius: 5px;
 $tooltip-padding: 4px;
 $tooltip-z-index: 1000;
 
+// divider
 $divider-stroke: $secondary;
 $divider-stroke-width: .1em;

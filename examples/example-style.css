@@ -1,0 +1,74 @@
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: #393862;
+}
+
+.funnel {
+    height: 100%;
+    padding: 0;
+}
+
+.flex {
+    display: flex;
+}
+
+.row {
+    flex-direction: row;
+}
+
+.col {
+    flex-direction: column;
+}
+
+button {
+    padding: 10px;
+    margin: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    background-color: #4A90E2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    width: 180px;
+    height: 28px;
+}
+
+button:hover {
+    background-color: #357ABD;
+    transform: translateY(-2px);
+}
+
+button:active {
+    background-color: #2C6EA3;
+    transform: translateY(0);
+}
+
+button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.5);
+}
+
+#button-container {
+    width: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    padding: 8px;
+}
+
+.funnel-graph, .funnel-wrapper {
+    width: 400px;
+    /* height: 100%; */
+    /* max-height: 100vh; */
+}

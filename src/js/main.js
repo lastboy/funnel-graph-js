@@ -1,9 +1,9 @@
 /* eslint-disable no-trailing-spaces */
 /* global HTMLElement */
-import { roundPoint, formatNumber } from './number';
+import { roundPoint } from './number';
 import { getDefaultColors } from './colors';
 import { getCrossAxisPoints, getPathDefinitions } from './path'
-import { createRootSVG, updateRootSVG, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo, destroySVG, getRootSvg } from './d3'
+import { createRootSVG, updateRootSVG, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo, destroySVG, getRootSvg, updateEvents } from './d3'
 import { nanoid } from 'nanoid';
 import { normalizeArray } from "./utils"
 
@@ -26,12 +26,29 @@ import { normalizeArray } from "./utils"
  *      displayPercent: false,
  *      margin: { ?top, ?right, ?bottom, ?left, text },
  *      gradientDirection: 'vertical',
+ * 
+ *      -- callbacks definitions 
  *      callbacks: {
- *          'click': () => {}
- *      }
- *      details: false
+ *          -- click on funnel areas
+ *          'click': ({ index, value, label, subLabel, sectionIndex }) => {},
+ *          -- override for the OOTB tooltip - funnel areas
+ *          'tooltip': (event, { label, value }) => {}
+ *      },
+ * 
+ *      -- display the OOTB tooltip - on / off
  *      tooltip: true,
- *      responsive: false
+ * 
+ *      -- remove the text - only graph will be display
+ *      details: false,
+ * 
+ *      -- resize the SVG using handler 
+ *      resize: true,
+ * 
+ *      -- responsive SVG using 100% for the width / height
+ *      responsive: false,
+ *      responsiveWidth: false,
+ *      responsiveHeight: false,
+ * 
  * }
  *  TODO: outlines: for two dimensions graph display
  */
@@ -44,24 +61,28 @@ class FunnelGraph {
             ? 'vertical'
             : 'horizontal';
 
-        this.setResponsive(options.hasOwnProperty("responsive") ? options.responsive : false);
         this.setDetails(options.hasOwnProperty('details') ? options.details : true);
         this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
         this.getDirection(options?.direction);
         this.setValues(options?.data?.values || []);
         this.setLabels(options?.data?.labels || []);
         this.setSubLabels(options?.data?.subLabels || []);
+
+        this.setResize(options?.resize);
+        this.setResponsive(options?.responsive, options?.responsiveWidth, options?.responsiveHeight);
+
         this.percentages = this.createPercentages();
         this.colors = options?.data?.colors || getDefaultColors(this.is2d() ? this.getSubDataSize() : 2);
         this.displayPercent = options.displayPercent || false;
 
-        this.margin = { top: 120, right: 60, bottom: 60, left: 60, text: 10 };
+        this.margin = { top: 120, right: 60, bottom: 60, left: 60, text: { left: 0, top: 10 } };
         this.setMargin(options?.margin);
 
-        let height = options.height || getContainer(this.containerSelector).clientHeight;
-        let width = options.width || getContainer(this.containerSelector).clientWidth;
+        let height = options.height || getContainer(this.containerSelector).node().clientHeight;
+        let width = options.width || getContainer(this.containerSelector).node().clientWidth;
 
         this.callbacks = options?.callbacks;
+        this.format = options?.format;
 
         this.height = height;
         this.width = width;
@@ -80,7 +101,7 @@ class FunnelGraph {
         /**
          * Helper for the dividers location 
          * Main use for the tooltip sections over the paths 
-         */ 
+         */
         this.linePositions = [];
     }
 
@@ -103,7 +124,7 @@ class FunnelGraph {
         return this.details;
     }
 
-    getContainerSelector(){
+    getContainerSelector() {
         return this.containerSelector;
     }
 
@@ -139,33 +160,12 @@ class FunnelGraph {
         return this.direction === 'vertical';
     }
 
-    setDirection(d) {
-        this.direction = d;
-    }
-
-    setHeight(h) {
-        this.height = h;
-
-    }
-
-    setWidth(w) {
-        this.width = w;
-    }
-
-    setTooltip(bool) {
-        this.tooltip = bool;
-    }
-
-    setDetails(bool) {
-        this.details = bool;
-    }
-
     /**
-     * Get the graph width
-     * 
-     * @param {*} margin included if true or else return the original width
-     * @returns 
-     */
+        * Get the graph width
+        * 
+        * @param {*} margin included if true or else return the original width
+        * @returns 
+        */
     getWidth(margin = true) {
         const width = margin ? (this.margin.left + this.margin.right) : 0;
         return this.width + width;
@@ -185,19 +185,19 @@ class FunnelGraph {
     getDimensions({ context, margin = true }) {
         const id = context.getId();
         const d3Svg = getRootSvg(id);
-    
+
         if (!d3Svg?.node()) {
-            return { 
-                width: context.getWidth(margin), 
-                height: context.getHeight(margin) 
+            return {
+                width: context.getWidth(margin),
+                height: context.getHeight(margin)
             }
         }
 
         const boundingRect = d3Svg.node().getBoundingClientRect();
 
         // Calculate the scale factors
-        const xFactor =  boundingRect.width / context.getWidth(true);
-        const yFactor =  boundingRect.height / context.getHeight(true);
+        const xFactor = boundingRect.width / context.getWidth(true);
+        const yFactor = boundingRect.height / context.getHeight(true);
 
         let width = boundingRect.width;
         let height = boundingRect.height;
@@ -206,20 +206,19 @@ class FunnelGraph {
         width += margin ? ((marginObj.left) + (marginObj.right)) : 0;
         height += margin ? ((marginObj.tooltip) + (marginObj.bottom)) : 0;
 
-        return { width, height, xFactor, yFactor, left: boundingRect.left, top: boundingRect.top, x: boundingRect.x , y: boundingRect.y };
+        return { width, height, xFactor, yFactor, left: boundingRect.left, top: boundingRect.top, x: boundingRect.x, y: boundingRect.y };
     }
 
     /**
      * Get the margin object { top: , right: , bottom: , left:  }
      */
     getMargin() {
-        return this.margin;
-    }
-
-    setMargin(margin) {
-        if (margin && typeof margin === 'object') {
-            this.margin = { ...this.margin, ...margin };
+        this.margin.text = this.margin.text || { left: 0, top: 0 };
+        if (!isNaN(this.margin.text)) {
+            this.margin.text = { top: this.margin.text, left: 0 }
         }
+
+        return this.margin;
     }
 
     getDataSize() {
@@ -227,8 +226,7 @@ class FunnelGraph {
     }
 
     getSubDataSize() {
-        // TODO:
-       return this.values?.[0]?.length || 0;
+        return this.values?.[0]?.length || 0;
     }
 
     getValues() {
@@ -247,6 +245,10 @@ class FunnelGraph {
         return this.callbacks;
     }
 
+    getFormat() {
+        return this.format;
+    }
+
     setLinePositions(position) {
         this.linePositions = position || [];
     }
@@ -257,10 +259,6 @@ class FunnelGraph {
 
     getResponsive() {
         return this.responsive;
-    }
-
-    setResponsive(value) {
-        this.responsive = value;
     }
 
     getValues2d() {
@@ -284,6 +282,67 @@ class FunnelGraph {
         return percentages;
     }
 
+    getResize() {
+        return this.resize;
+    }
+
+    setResize(resize) {
+        this.resize = resize;
+    }
+
+    setDirection(d) {
+        this.direction = d;
+    }
+
+    setHeight(h) {
+        this.height = h;
+
+    }
+
+    setWidth(w) {
+        this.width = w;
+    }
+
+    setTooltip(bool) {
+        this.tooltip = bool;
+    }
+
+    setDetails(bool) {
+        this.details = bool;
+    }
+
+    setMargin(margin) {
+        if (margin && typeof margin === 'object') {
+            this.margin = { ...this.margin, ...margin };
+        }
+    }
+
+    setResponsive(isResponsive, isResponsiveWidth, isResponsiveHeight) {
+        const responsive = {};
+        if (isResponsive) {
+            responsive.width = true;
+            responsive.height = true;
+        }
+
+        if (isResponsiveWidth) {
+            responsive.width = true;
+        }
+
+        if (isResponsiveHeight) {
+            responsive.height = true;
+        }
+
+        this.responsive = responsive;
+    }
+
+    setResponsiveWidth(isResponsive) {
+        this.setResponsive(undefined, isResponsive);
+    }
+
+    setResponsiveHeight(isResponsive) {
+        this.setResponsive(undefined, undefined, isResponsive);
+    }
+
     setSubLabels(subLabels) {
         subLabels = normalizeArray(subLabels)
         this.subLabels = subLabels;
@@ -292,7 +351,7 @@ class FunnelGraph {
     setLabels(labels) {
 
         labels = normalizeArray(labels)
-        this.labels = labels; 
+        this.labels = labels;
     }
 
     setValues(values) {
@@ -386,15 +445,15 @@ class FunnelGraph {
      */
     getContext() {
         const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(this))
-          .filter(prop => typeof this[prop] === 'function' && prop !== 'constructor');
-        
+            .filter(prop => typeof this[prop] === 'function' && prop !== 'constructor');
+
         const boundMethods = {};
         for (const method of methods) {
-          boundMethods[method] = this[method].bind(this);
+            boundMethods[method] = this[method].bind(this);
         }
-    
+
         return boundMethods;
-      }
+    }
 
     /**
      * Get the graph information 
@@ -410,7 +469,7 @@ class FunnelGraph {
 
             // update value 
             const valueNumber = this.is2d() ? this.getValues2d()[index] : this.values[index];
-            infoItem.value = formatNumber(valueNumber);
+            infoItem.value = valueNumber;
 
             // update label
             infoItem.label = this.labels?.[index] || 'NA';
@@ -443,14 +502,42 @@ class FunnelGraph {
         drawPaths({
             context: this.getContext(),
             definitions,
-          
+
         });
 
         drawInfo({
             context: this.getContext()
         });
+
+        updateEvents({
+            context: this.getContext(),
+            events: { onResize: this.onResize.bind(this) }
+        })
     }
 
+
+    onResize() {
+        const context = this;
+        const container = getContainer(context.containerSelector)
+    
+        if (container) {
+    
+            const containerNode = container.node();
+    
+            let newWidth = +containerNode.clientWidth - 200;
+            let newHeight = +containerNode.clientHeight - 200;
+
+            const aspectRatio = 1 / 1
+            
+            newWidth = newWidth * aspectRatio;
+            newHeight = newHeight * aspectRatio;
+
+            context.setWidth(newWidth);
+            context.setHeight(newHeight);
+
+            context.drawGraph();
+        }
+    }
     /**
      * Create the main SVG and draw the graph
      */
@@ -480,52 +567,35 @@ class FunnelGraph {
     updateData(d) {
 
         if (d) {
-            if (typeof d.responsive !== 'undefined') {
-                this.setResponsive(d.responsive);
-            }   
 
-            if (typeof d.width !== 'undefined') {
-                this.setWidth(d.width);
-            }   
+            const validate = (arg) => typeof arg !== 'undefined'
 
-            if (typeof d.height !== 'undefined') {
-                this.setHeight(d.height);
-            }  
+            const mapMethods = [
+                { key: "resize", fn: (arg) => this.setResize(arg) },
+                { key: "responsive", fn: (arg) => this.setResponsive(arg) },
+                { key: "responsiveWidth", fn: (arg) => this.setResponsiveWidth(arg) },
+                { key: "responsiveHeight", fn: (arg) => this.setResponsiveHeight(arg) },
+                { key: "width", fn: (arg) => this.setWidth(arg) },
+                { key: "height", fn: (arg) => this.setHeight(arg) },
+                { key: "margin", fn: (arg) => this.setMargin(arg) },
+                { key: "details", fn: (arg) => this.setDetails(arg) },
+                { key: "tooltip", fn: (arg) => this.setTooltip(arg) },
+                { key: "values", fn: (arg) => this.setValues(arg) },
+                { key: "labels", fn: (arg) => this.setLabels(arg) },
+                { key: "subLabels", fn: (arg) => this.setSubLabels(arg) },
+                { key: "colors", fn: (arg) => this.colors = arg || getDefaultColors(this.is2d() ? this.getSubDataSize() : 2) },
+            ]
 
-            if (typeof d.margin !== 'undefined') {
-                this.setMargin(d.margin);
-            }   
-
-            if (typeof d.details !== 'undefined') {
-                this.setDetails(d.details);
-            }   
-
-            if (typeof d.tooltip !== 'undefined') {
-                this.setTooltip(d.tooltip);
-            }   
-
-            if (typeof d.values !== 'undefined') {
-                // Update values
-                this.setValues([ ...d.values ]);
-            }
-
-            if (typeof d.labels !== 'undefined') {
-                // Update labels if specified in the new data
-                this.setLabels([ ...d.labels ]);
-            }
-
-            if (typeof d.colors !== 'undefined') {
-                // Update colors if specified, or use default colors as a fallback
-                this.colors = d.colors || getDefaultColors(this.is2d() ? this.getSubDataSize() : 2);
+            for (const method of mapMethods) {
+                const key = method.key;
+                const arg = d[key];
+                if (validate(arg)) {
+                    method.fn(arg);
+                }
             }
 
             // Calculate percentages for the graph based on the updated or existing values
             this.percentages = this.createPercentages();
-
-            if (typeof d.subLabels !== 'undefined') {
-                // Update subLabels if specified in the new data
-                this.setSubLabels([ ...d.subLabels ]);
-            }
         }
 
         this.drawGraph();

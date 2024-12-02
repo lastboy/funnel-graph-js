@@ -1,6 +1,6 @@
 {
   "name": "d3-funnel-graph",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "SVG Funnel Graph Javascript Library",
   "main": "dist/js/funnel-graph.min.js",
   "style": "dist/funnel-graph.min.css",
@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "start": "gulp",
-    "build": "gulp build", 
+    "build": "gulp build",
     "test": "nyc mocha --compilers js:babel-core/register"
   },
   "author": "Arik Lewin",
@@ -18,6 +18,11 @@
     "type": "git",
     "url": "https://github.com/lastboy/funnel-graph-js.git"
   },
+  "bugs": {
+    "url": "https://github.com/lastboy/funnel-graph-js.git/issues"
+  },
+  "homepage": "https://github.com/lastboy/funnel-graph-js.git#readme",
+  "changelog": "https://github.com/lastboy/funnel-graph-js.git/releases",
   "keywords": [
     "d3",
     "funnel",
@@ -56,6 +61,7 @@
     "gulp-sass": "^4.0.2",
     "gulp-sass-lint": "^1.4.0",
     "gulp-streamify": "^1.0.2",
+    "gulp-terser": "^2.1.0",
     "gulp-uglify": "^3.0.2",
     "gulp-util": "^3.0.8",
     "mocha": "^5.2.0",
@@ -70,6 +76,7 @@
     "d3-interpolate": "^3.0.1",
     "d3-selection": "^3.0.0",
     "d3-transition": "^3.0.1",
+    "lodash.debounce": "^4.0.8",
     "nanoid": "3.1.30"
   }
 }

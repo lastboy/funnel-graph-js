@@ -3,7 +3,7 @@
 
 module.exports = require('./src/js/main').default;
 
-},{"./src/js/main":139}],2:[function(require,module,exports){
+},{"./src/js/main":141}],2:[function(require,module,exports){
 "use strict";
 
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
@@ -5030,6 +5030,371 @@ function tweenValue(transition, name, value) {
 }
 
 },{"./schedule.js":124}],134:[function(require,module,exports){
+(function (global){(function (){
+"use strict";
+
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+/**
+ * lodash (Custom Build) <https://lodash.com/>
+ * Build: `lodash modularize exports="npm" -o ./`
+ * Copyright jQuery Foundation and other contributors <https://jquery.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
+
+/** Used as the `TypeError` message for "Functions" methods. */
+var FUNC_ERROR_TEXT = 'Expected a function';
+
+/** Used as references for various `Number` constants. */
+var NAN = 0 / 0;
+
+/** `Object#toString` result references. */
+var symbolTag = '[object Symbol]';
+
+/** Used to match leading and trailing whitespace. */
+var reTrim = /^\s+|\s+$/g;
+
+/** Used to detect bad signed hexadecimal string values. */
+var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
+
+/** Used to detect binary string values. */
+var reIsBinary = /^0b[01]+$/i;
+
+/** Used to detect octal string values. */
+var reIsOctal = /^0o[0-7]+$/i;
+
+/** Built-in method references without a dependency on `root`. */
+var freeParseInt = parseInt;
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = (typeof global === "undefined" ? "undefined" : _typeof(global)) == 'object' && global && global.Object === Object && global;
+
+/** Detect free variable `self`. */
+var freeSelf = (typeof self === "undefined" ? "undefined" : _typeof(self)) == 'object' && self && self.Object === Object && self;
+
+/** Used as a reference to the global object. */
+var root = freeGlobal || freeSelf || Function('return this')();
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeMax = Math.max,
+  nativeMin = Math.min;
+
+/**
+ * Gets the timestamp of the number of milliseconds that have elapsed since
+ * the Unix epoch (1 January 1970 00:00:00 UTC).
+ *
+ * @static
+ * @memberOf _
+ * @since 2.4.0
+ * @category Date
+ * @returns {number} Returns the timestamp.
+ * @example
+ *
+ * _.defer(function(stamp) {
+ *   console.log(_.now() - stamp);
+ * }, _.now());
+ * // => Logs the number of milliseconds it took for the deferred invocation.
+ */
+var now = function now() {
+  return root.Date.now();
+};
+
+/**
+ * Creates a debounced function that delays invoking `func` until after `wait`
+ * milliseconds have elapsed since the last time the debounced function was
+ * invoked. The debounced function comes with a `cancel` method to cancel
+ * delayed `func` invocations and a `flush` method to immediately invoke them.
+ * Provide `options` to indicate whether `func` should be invoked on the
+ * leading and/or trailing edge of the `wait` timeout. The `func` is invoked
+ * with the last arguments provided to the debounced function. Subsequent
+ * calls to the debounced function return the result of the last `func`
+ * invocation.
+ *
+ * **Note:** If `leading` and `trailing` options are `true`, `func` is
+ * invoked on the trailing edge of the timeout only if the debounced function
+ * is invoked more than once during the `wait` timeout.
+ *
+ * If `wait` is `0` and `leading` is `false`, `func` invocation is deferred
+ * until to the next tick, similar to `setTimeout` with a timeout of `0`.
+ *
+ * See [David Corbacho's article](https://css-tricks.com/debouncing-throttling-explained-examples/)
+ * for details over the differences between `_.debounce` and `_.throttle`.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Function
+ * @param {Function} func The function to debounce.
+ * @param {number} [wait=0] The number of milliseconds to delay.
+ * @param {Object} [options={}] The options object.
+ * @param {boolean} [options.leading=false]
+ *  Specify invoking on the leading edge of the timeout.
+ * @param {number} [options.maxWait]
+ *  The maximum time `func` is allowed to be delayed before it's invoked.
+ * @param {boolean} [options.trailing=true]
+ *  Specify invoking on the trailing edge of the timeout.
+ * @returns {Function} Returns the new debounced function.
+ * @example
+ *
+ * // Avoid costly calculations while the window size is in flux.
+ * jQuery(window).on('resize', _.debounce(calculateLayout, 150));
+ *
+ * // Invoke `sendMail` when clicked, debouncing subsequent calls.
+ * jQuery(element).on('click', _.debounce(sendMail, 300, {
+ *   'leading': true,
+ *   'trailing': false
+ * }));
+ *
+ * // Ensure `batchLog` is invoked once after 1 second of debounced calls.
+ * var debounced = _.debounce(batchLog, 250, { 'maxWait': 1000 });
+ * var source = new EventSource('/stream');
+ * jQuery(source).on('message', debounced);
+ *
+ * // Cancel the trailing debounced invocation.
+ * jQuery(window).on('popstate', debounced.cancel);
+ */
+function debounce(func, wait, options) {
+  var lastArgs,
+    lastThis,
+    maxWait,
+    result,
+    timerId,
+    lastCallTime,
+    lastInvokeTime = 0,
+    leading = false,
+    maxing = false,
+    trailing = true;
+  if (typeof func != 'function') {
+    throw new TypeError(FUNC_ERROR_TEXT);
+  }
+  wait = toNumber(wait) || 0;
+  if (isObject(options)) {
+    leading = !!options.leading;
+    maxing = 'maxWait' in options;
+    maxWait = maxing ? nativeMax(toNumber(options.maxWait) || 0, wait) : maxWait;
+    trailing = 'trailing' in options ? !!options.trailing : trailing;
+  }
+  function invokeFunc(time) {
+    var args = lastArgs,
+      thisArg = lastThis;
+    lastArgs = lastThis = undefined;
+    lastInvokeTime = time;
+    result = func.apply(thisArg, args);
+    return result;
+  }
+  function leadingEdge(time) {
+    // Reset any `maxWait` timer.
+    lastInvokeTime = time;
+    // Start the timer for the trailing edge.
+    timerId = setTimeout(timerExpired, wait);
+    // Invoke the leading edge.
+    return leading ? invokeFunc(time) : result;
+  }
+  function remainingWait(time) {
+    var timeSinceLastCall = time - lastCallTime,
+      timeSinceLastInvoke = time - lastInvokeTime,
+      result = wait - timeSinceLastCall;
+    return maxing ? nativeMin(result, maxWait - timeSinceLastInvoke) : result;
+  }
+  function shouldInvoke(time) {
+    var timeSinceLastCall = time - lastCallTime,
+      timeSinceLastInvoke = time - lastInvokeTime;
+
+    // Either this is the first call, activity has stopped and we're at the
+    // trailing edge, the system time has gone backwards and we're treating
+    // it as the trailing edge, or we've hit the `maxWait` limit.
+    return lastCallTime === undefined || timeSinceLastCall >= wait || timeSinceLastCall < 0 || maxing && timeSinceLastInvoke >= maxWait;
+  }
+  function timerExpired() {
+    var time = now();
+    if (shouldInvoke(time)) {
+      return trailingEdge(time);
+    }
+    // Restart the timer.
+    timerId = setTimeout(timerExpired, remainingWait(time));
+  }
+  function trailingEdge(time) {
+    timerId = undefined;
+
+    // Only invoke if we have `lastArgs` which means `func` has been
+    // debounced at least once.
+    if (trailing && lastArgs) {
+      return invokeFunc(time);
+    }
+    lastArgs = lastThis = undefined;
+    return result;
+  }
+  function cancel() {
+    if (timerId !== undefined) {
+      clearTimeout(timerId);
+    }
+    lastInvokeTime = 0;
+    lastArgs = lastCallTime = lastThis = timerId = undefined;
+  }
+  function flush() {
+    return timerId === undefined ? result : trailingEdge(now());
+  }
+  function debounced() {
+    var time = now(),
+      isInvoking = shouldInvoke(time);
+    lastArgs = arguments;
+    lastThis = this;
+    lastCallTime = time;
+    if (isInvoking) {
+      if (timerId === undefined) {
+        return leadingEdge(lastCallTime);
+      }
+      if (maxing) {
+        // Handle invocations in a tight loop.
+        timerId = setTimeout(timerExpired, wait);
+        return invokeFunc(lastCallTime);
+      }
+    }
+    if (timerId === undefined) {
+      timerId = setTimeout(timerExpired, wait);
+    }
+    return result;
+  }
+  debounced.cancel = cancel;
+  debounced.flush = flush;
+  return debounced;
+}
+
+/**
+ * Checks if `value` is the
+ * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+ * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(_.noop);
+ * // => true
+ *
+ * _.isObject(null);
+ * // => false
+ */
+function isObject(value) {
+  var type = _typeof(value);
+  return !!value && (type == 'object' || type == 'function');
+}
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return !!value && _typeof(value) == 'object';
+}
+
+/**
+ * Checks if `value` is classified as a `Symbol` primitive or object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+ * @example
+ *
+ * _.isSymbol(Symbol.iterator);
+ * // => true
+ *
+ * _.isSymbol('abc');
+ * // => false
+ */
+function isSymbol(value) {
+  return _typeof(value) == 'symbol' || isObjectLike(value) && objectToString.call(value) == symbolTag;
+}
+
+/**
+ * Converts `value` to a number.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to process.
+ * @returns {number} Returns the number.
+ * @example
+ *
+ * _.toNumber(3.2);
+ * // => 3.2
+ *
+ * _.toNumber(Number.MIN_VALUE);
+ * // => 5e-324
+ *
+ * _.toNumber(Infinity);
+ * // => Infinity
+ *
+ * _.toNumber('3.2');
+ * // => 3.2
+ */
+function toNumber(value) {
+  if (typeof value == 'number') {
+    return value;
+  }
+  if (isSymbol(value)) {
+    return NAN;
+  }
+  if (isObject(value)) {
+    var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
+    value = isObject(other) ? other + '' : other;
+  }
+  if (typeof value != 'string') {
+    return value === 0 ? value : +value;
+  }
+  value = value.replace(reTrim, '');
+  var isBinary = reIsBinary.test(value);
+  return isBinary || reIsOctal.test(value) ? freeParseInt(value.slice(2), isBinary ? 2 : 8) : reIsBadHex.test(value) ? NAN : +value;
+}
+module.exports = debounce;
+
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],135:[function(require,module,exports){
 (function (process){(function (){
 "use strict";
 
@@ -5094,7 +5459,7 @@ module.exports = {
 };
 
 }).call(this)}).call(this,require('_process'))
-},{"./url-alphabet/index.cjs":135,"_process":136}],135:[function(require,module,exports){
+},{"./url-alphabet/index.cjs":136,"_process":137}],136:[function(require,module,exports){
 "use strict";
 
 var urlAlphabet = 'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict';
@@ -5102,7 +5467,7 @@ module.exports = {
   urlAlphabet: urlAlphabet
 };
 
-},{}],136:[function(require,module,exports){
+},{}],137:[function(require,module,exports){
 "use strict";
 
 // shim for using process in browser
@@ -5281,7 +5646,7 @@ process.umask = function () {
   return 0;
 };
 
-},{}],137:[function(require,module,exports){
+},{}],138:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5303,161 +5668,145 @@ var getDefaultColors = exports.getDefaultColors = function getDefaultColors(numb
   return colorSet;
 };
 
-},{}],138:[function(require,module,exports){
+},{}],139:[function(require,module,exports){
 "use strict";
 
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.updateRootSVG = exports.gradientMakeVertical = exports.gradientMakeHorizontal = exports.getRootSvg = exports.getContainer = exports.drawPaths = exports.drawInfo = exports.destroySVG = exports.createRootSVG = void 0;
-var _d3Selection = require("d3-selection");
-require("d3-transition");
+exports.removeClickEvent = exports.mouseInfoHandler = exports.addMouseEventIfNotExists = exports.addLabelMouseEventIfNotExists = void 0;
 var _d3Timer = require("d3-timer");
-var _d3Ease = require("d3-ease");
-function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+var _d3Selection = require("d3-selection");
+var _number = require("./number");
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
 function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
-function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
-function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
-function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
-function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
-function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 /**
- * Get the main root SVG element
+ * Add tooltip and path click handlers according to the configuration 
  */
-var getRootSvg = exports.getRootSvg = function getRootSvg(id) {
-  return (0, _d3Selection.select)("#".concat(id));
-};
-
-/**
- * Get the graph group [create if not exists]
- */
-var getRootSvgGroup = function getRootSvgGroup(id, margin) {
-  var svg = getRootSvg(id);
-  var groupId = "".concat(id, "_graph");
-  var group = svg.select("#".concat(groupId));
-  if (group.empty()) {
-    group = svg.append('g').attr('id', groupId);
-    if (margin) {
-      group.attr('transform', "translate(".concat(margin.left, ", ").concat(margin.top, ")"));
+var addMouseEventIfNotExists = exports.addMouseEventIfNotExists = function addMouseEventIfNotExists(_ref) {
+  var context = _ref.context,
+    updateLinePositions = _ref.updateLinePositions;
+  return function (pathElement, clickHandler, tooltipHandler, metadata) {
+    var clickEventExists = !!(pathElement !== null && pathElement !== void 0 && pathElement.on('click'));
+    if (!clickEventExists && clickHandler) {
+      pathElement === null || pathElement === void 0 || pathElement.on('click', mouseInfoHandler({
+        context: context,
+        clickHandler: clickHandler,
+        metadata: metadata,
+        updateLinePositions: updateLinePositions
+      }));
     }
-  }
-  return group;
-};
-
-/**
- * Get the info group [create if not exists]
- */
-var getInfoSvgGroup = function getInfoSvgGroup(id, margin) {
-  var svg = getRootSvg(id);
-  var groupId = "".concat(id, "_info");
-  var group = svg.select("#".concat(groupId));
-  if (group.empty()) {
-    group = svg.append('g').attr('id', groupId);
-    if (margin) {
-      // TODO: evaluate - delete if not in use
-      // group.attr('transform', `translate(${margin.left}, 0)`);
+    if (!context.showDetails()) {
+      pathElement === null || pathElement === void 0 || pathElement.on('mouseover', null);
+      pathElement === null || pathElement === void 0 || pathElement.on('mousemove', null);
+      pathElement === null || pathElement === void 0 || pathElement.on('mouseout', null);
+      return;
     }
-  }
-  return group;
+    var overEventExists = !!pathElement.on('mouseover');
+    if (!overEventExists) {
+      var updateTooltip = function updateTooltip(e) {
+        var _this = this;
+        var is2d = context.is2d();
+        var mouseHandler = mouseInfoHandler({
+          context: context,
+          handler: clickHandler,
+          metadata: metadata,
+          tooltip: true,
+          updateLinePositions: updateLinePositions
+        }).bind(this);
+        var handlerMetadata = mouseHandler(e);
+        if (handlerMetadata) {
+          var tooltipElement = getTooltipElement();
+          if (tooltipTimeout) tooltipTimeout.stop();
+          tooltipTimeout = (0, _d3Timer.timeout)(function () {
+            var path = (0, _d3Selection.select)(_this);
+            if (context.showTooltip() && path && tooltipElement) {
+              // get the mouse point
+              var _pointer = (0, _d3Selection.pointer)(e, path),
+                _pointer2 = _slicedToArray(_pointer, 2),
+                x = _pointer2[0],
+                y = _pointer2[1];
+              var clickPoint = {
+                x: x,
+                y: y
+              };
+
+              // set the tooltip with the relevant text
+              var label = handlerMetadata.label || "Value";
+              label = is2d ? handlerMetadata.subLabel || label : label;
+              var value = handlerMetadata.value;
+              if (tooltipHandler) {
+                tooltipHandler(e, {
+                  label: label,
+                  value: value,
+                  x: x,
+                  y: y
+                });
+              } else {
+                var format = context.getFormat();
+                var labelFormatCallback = function labelFormatCallback(value) {
+                  return (0, _number.formatNumber)(value);
+                };
+                if (typeof (format === null || format === void 0 ? void 0 : format.value) === "function") {
+                  labelFormatCallback = format.value;
+                }
+                var tooltipText = "".concat(label, ": ").concat(labelFormatCallback(value));
+                tooltipElement
+                // TODO: when exceeding the document area - move the tooltip up/down or left/right
+                // according to the position (e.g. top /right window eƒxceeded or right) 
+                .style("left", clickPoint.x + 10 + "px").style("top", clickPoint.y + 10 + "px").text(tooltipText).style("opacity", "1").style("display", "flex");
+              }
+            }
+          }, 500);
+        }
+        if (e.type === "mouseover") {
+          var _pathElement = (0, _d3Selection.select)(this);
+          if (_pathElement) {
+            var _clickEventExists = !!(_pathElement !== null && _pathElement !== void 0 && _pathElement.on('click'));
+            _pathElement.transition().duration(500).attr("stroke-width", '4px');
+            if (_clickEventExists) {
+              _pathElement.style("cursor", "pointer");
+            }
+          }
+        }
+      };
+      var tooltipTimeout;
+      pathElement.on('mouseover', updateTooltip);
+      pathElement.on('mousemove', updateTooltip);
+      pathElement.on('mouseout', function (event) {
+        var pathElement = (0, _d3Selection.select)(event.target);
+        if (pathElement) {
+          pathElement.transition().duration(500).style("cursor", "pointer").attr("stroke-width", '0');
+        }
+        if (tooltipTimeout) tooltipTimeout.stop();
+        var tooltipElement = getTooltipElement();
+        if (tooltipElement) {
+          tooltipElement.style("opacity", "0").style("display", "none").text("");
+        }
+      });
+    }
+  };
 };
 
 /**
- * Get he main container div according to the selector
+ * Gather the path information and return the click area handler  
  */
-var getContainer = exports.getContainer = function getContainer(containerSelector) {
-  return (0, _d3Selection.select)(containerSelector);
-};
-var getTooltipElement = function getTooltipElement() {
-  return (0, _d3Selection.select)("#d3-funnel-js-tooltip");
-};
-
-/**
- * Create the main SVG element 
- */
-var createRootSVG = exports.createRootSVG = function createRootSVG(_ref) {
-  var context = _ref.context;
-  var id = context.getId();
-  var responsive = context.getResponsive();
-  var width = context.getWidth();
-  var height = context.getHeight();
-  var margin = context.getMargin();
-  var containerSelector = context.getContainerSelector();
-  var container = (0, _d3Selection.select)(containerSelector);
-  var bodySelection = (0, _d3Selection.select)("body");
-  var tooltipParentElement = bodySelection.empty() ? container : bodySelection;
-
-  // add tooltip element
-  tooltipParentElement.append('div').attr('id', "d3-funnel-js-tooltip").attr('class', 'd3-funnel-js-tooltip');
-  var d3Svg = container.append('svg').attr('class', 'd3-funnel-js').attr('id', id).attr('width', responsive ? "100%" : width).attr('height', responsive ? "100%" : height).attr('viewBox', "0 0 ".concat(width, " ").concat(height)).attr('preserveAspectRatio', 'xMidYMin meet');
-  getRootSvgGroup(id, margin);
-  return d3Svg;
-};
-var updateSVGGroup = function updateSVGGroup(id, margin) {
-  var group = getRootSvgGroup(id);
-  group === null || group === void 0 || group.attr('transform', "translate(".concat(margin.left, ", ").concat(margin.top, ")"));
-};
-
-/**
- * Update the root SVG [demnsions, transform] 
- */
-var updateRootSVG = exports.updateRootSVG = function updateRootSVG(_ref2) {
+var mouseInfoHandler = exports.mouseInfoHandler = function mouseInfoHandler(_ref2) {
   var context = _ref2.context,
-    rotateFrom = _ref2.rotateFrom,
-    rotateTo = _ref2.rotateTo;
-  var id = context.getId();
-  var responsive = context.getResponsive();
-  var width = context.getWidth();
-  var height = context.getHeight();
-  var d3Svg = id ? getRootSvg(id) : undefined;
-  if (d3Svg) {
-    var root = d3Svg.transition().delay(500).duration(1000);
-    if (!isNaN(width) && !isNaN(height)) {
-      if (!responsive) {
-        d3Svg.attr("width", width);
-        d3Svg.attr("height", height);
-      } else {
-        d3Svg.attr("width", "100%");
-        d3Svg.attr("height", "100%");
-      }
-      d3Svg.attr('viewBox', "0 0 ".concat(width, " ").concat(height));
-    }
-    if (!isNaN(rotateTo) && !isNaN(rotateTo)) {
-      var centerX = 0;
-      var centerY = 0;
-      root.attrTween('transform', function () {
-        return function (t) {
-          return "rotate(".concat((1 - t) * rotateFrom + t * rotateTo, " ").concat(centerX, " ").concat(centerY, ")");
-        };
-      }).on('end', function () {});
-    }
-  }
-};
-var gradientMakeVertical = exports.gradientMakeVertical = function gradientMakeVertical(_ref3) {
-  var _getRootSvg;
-  var id = _ref3.id;
-  var gradients = (_getRootSvg = getRootSvg(id)) === null || _getRootSvg === void 0 || (_getRootSvg = _getRootSvg.select('defs')) === null || _getRootSvg === void 0 ? void 0 : _getRootSvg.selectAll('linearGradient');
-  if (gradients) {
-    gradients.attr('x1', '0').attr('x2', '0').attr('y1', '0').attr('y2', '1');
-  }
-};
-var gradientMakeHorizontal = exports.gradientMakeHorizontal = function gradientMakeHorizontal(_ref4) {
-  var _getRootSvg2;
-  var id = _ref4.id;
-  var gradients = (_getRootSvg2 = getRootSvg(id)) === null || _getRootSvg2 === void 0 || (_getRootSvg2 = _getRootSvg2.select('defs')) === null || _getRootSvg2 === void 0 ? void 0 : _getRootSvg2.selectAll('linearGradient');
-  if (gradients) {
-    gradients.attr('x1', null).attr('x2', null).attr('y1', null).attr('y2', null);
-  }
-};
-var mouseInfoHandler = function mouseInfoHandler(_ref5) {
-  var context = _ref5.context,
-    clickHandler = _ref5.clickHandler,
-    metadata = _ref5.metadata,
-    tooltip = _ref5.tooltip;
+    clickHandler = _ref2.clickHandler,
+    metadata = _ref2.metadata,
+    tooltip = _ref2.tooltip,
+    updateLinePositions = _ref2.updateLinePositions;
   return function (e) {
     var _context$getDimension = context.getDimensions({
         context: context,
@@ -5505,109 +5854,180 @@ var mouseInfoHandler = function mouseInfoHandler(_ref5) {
     return metadata;
   };
 };
-var addMouseEventIfNotExists = function addMouseEventIfNotExists(_ref6) {
-  var context = _ref6.context;
-  return function (pathElement, clickHandler, tooltipHandler, metadata) {
-    var clickEventExists = !!(pathElement !== null && pathElement !== void 0 && pathElement.on('click'));
-    if (!clickEventExists && clickHandler) {
-      pathElement === null || pathElement === void 0 || pathElement.on('click', mouseInfoHandler({
-        context: context,
-        clickHandler: clickHandler,
-        metadata: metadata
-      }));
-    }
-    if (!context.showDetails()) {
-      pathElement === null || pathElement === void 0 || pathElement.on('mouseover', null);
-      pathElement === null || pathElement === void 0 || pathElement.on('mousemove', null);
-      pathElement === null || pathElement === void 0 || pathElement.on('mouseout', null);
-      return;
-    }
-    var overEventExists = !!pathElement.on('mouseover');
-    if (!overEventExists) {
-      var updateTooltip = function updateTooltip(e) {
-        var _this = this;
-        var is2d = context.is2d();
-        var mouseHandler = mouseInfoHandler({
-          context: context,
-          handler: clickHandler,
-          metadata: metadata,
-          tooltip: true
-        }).bind(this);
-        var handlerMetadata = mouseHandler(e);
-        if (handlerMetadata) {
-          var tooltipElement = getTooltipElement();
-          if (tooltipTimeout) tooltipTimeout.stop();
-          tooltipTimeout = (0, _d3Timer.timeout)(function () {
-            var path = (0, _d3Selection.select)(_this);
-            if (context.showTooltip() && path && tooltipElement) {
-              // get the mouse point
-              var _pointer = (0, _d3Selection.pointer)(e, path),
-                _pointer2 = _slicedToArray(_pointer, 2),
-                x = _pointer2[0],
-                y = _pointer2[1];
-              var clickPoint = {
-                x: x,
-                y: y
-              };
 
-              // set the tooltip with the relevant text
-              var label = handlerMetadata.label || "Value";
-              label = is2d ? handlerMetadata.subLabel || label : label;
-              var value = handlerMetadata.value;
-              if (tooltipHandler) {
-                tooltipHandler(e, {
-                  label: label,
-                  value: value,
-                  x: x,
-                  y: y
-                });
-              } else {
-                var tooltipText = "".concat(label, ": ").concat(value);
-                tooltipElement
-                // TODO: when exceeding the document area - move the tooltip up/down or left/right
-                // according to the position (e.g. top /right window eƒxceeded or right) 
-                .style("left", clickPoint.x + 10 + "px").style("top", clickPoint.y + 10 + "px").text(tooltipText).style("opacity", "1").style("display", "flex");
-              }
-            }
-          }, 500);
-        }
-        if (e.type === "mouseover") {
-          var _pathElement = (0, _d3Selection.select)(this);
-          if (_pathElement) {
-            var _clickEventExists = !!(_pathElement !== null && _pathElement !== void 0 && _pathElement.on('click'));
-            _pathElement.transition().duration(500).attr("stroke-width", '4px');
-            if (_clickEventExists) {
-              _pathElement.style("cursor", "pointer");
-            }
-          }
-        }
-      };
-      var tooltipTimeout;
-      pathElement.on('mouseover', updateTooltip);
-      pathElement.on('mousemove', updateTooltip);
-      pathElement.on('mouseout', function (event) {
-        var pathElement = (0, _d3Selection.select)(event.target);
-        if (pathElement) {
-          pathElement.transition().duration(500).style("cursor", "pointer").attr("stroke-width", '0');
-        }
-        if (tooltipTimeout) tooltipTimeout.stop();
-        var tooltipElement = getTooltipElement();
-        if (tooltipElement) {
-          tooltipElement.style("opacity", "0").style("display", "none").text("");
-        }
-      });
+/**
+ * Add label hander if mot exists 
+ */
+var addLabelMouseEventIfNotExists = exports.addLabelMouseEventIfNotExists = function addLabelMouseEventIfNotExists(_ref3) {
+  var context = _ref3.context;
+  return function (groupLabels) {
+    var callbacks = context.getCallBacks();
+    var clickLabelHandler = typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.label) === "function";
+    var groupLabelsExists = !!(groupLabels !== null && groupLabels !== void 0 && groupLabels.on('click'));
+    if (!groupLabelsExists && clickLabelHandler) {
+      groupLabels.on("click", callbacks.label);
+      groupLabels.style("cursor", "pointer");
     }
   };
 };
-var removeClickEvent = function removeClickEvent(pathElement) {
-  pathElement.on('click', null);
+var removeClickEvent = exports.removeClickEvent = function removeClickEvent(pathElement) {
+  pathElement === null || pathElement === void 0 || pathElement.on('click', null);
+};
+var getTooltipElement = function getTooltipElement() {
+  return (0, _d3Selection.select)("#d3-funnel-js-tooltip");
+};
+
+},{"./number":142,"d3-selection":52,"d3-timer":101}],140:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.updateRootSVG = exports.updateEvents = exports.gradientMakeVertical = exports.gradientMakeHorizontal = exports.getRootSvg = exports.getContainer = exports.drawPaths = exports.drawInfo = exports.destroySVG = exports.createRootSVG = void 0;
+var _d3Selection = require("d3-selection");
+require("d3-transition");
+var _d3Ease = require("d3-ease");
+var _lodash = _interopRequireDefault(require("lodash.debounce"));
+var _d3Handlers = require("./d3-handlers");
+var _number = require("./number");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+/**
+ * Get the main root SVG element
+ */
+var getRootSvg = exports.getRootSvg = function getRootSvg(id) {
+  return (0, _d3Selection.select)("#".concat(id));
+};
+
+/**
+ * Get the graph group [create if not exists]
+ */
+var getRootSvgGroup = function getRootSvgGroup(id, margin) {
+  var svg = getRootSvg(id);
+  var groupId = "".concat(id, "_graph");
+  var group = svg.select("#".concat(groupId));
+  if (group.empty()) {
+    group = svg.append('g').attr('id', groupId);
+    if (margin) {
+      group.attr('transform', "translate(".concat(margin.left, ", ").concat(margin.top, ")"));
+    }
+  }
+  return group;
+};
+
+/**
+ * Get the info group [create if not exists]
+ */
+var getInfoSvgGroup = function getInfoSvgGroup(id, margin) {
+  var svg = getRootSvg(id);
+  var groupId = "".concat(id, "_info");
+  var group = svg.select("#".concat(groupId));
+  if (group.empty()) {
+    group = svg.append('g').attr('id', groupId);
+    if (margin) {
+      // TODO: evaluate - delete if not in use
+      // group.attr('transform', `translate(${margin.left}, 0)`);
+    }
+  }
+  return group;
+};
+
+/**
+ * Get he main container div according to the selector
+ */
+var getContainer = exports.getContainer = function getContainer(containerSelector) {
+  return (0, _d3Selection.select)(containerSelector);
+};
+
+/**
+ * Create the main SVG element 
+ */
+var createRootSVG = exports.createRootSVG = function createRootSVG(_ref) {
+  var context = _ref.context;
+  var id = context.getId();
+  var responsive = context.getResponsive();
+  var width = context.getWidth();
+  var height = context.getHeight();
+  var margin = context.getMargin();
+  var containerSelector = context.getContainerSelector();
+  var container = (0, _d3Selection.select)(containerSelector);
+  var bodySelection = (0, _d3Selection.select)("body");
+  var tooltipParentElement = bodySelection.empty() ? container : bodySelection;
+
+  // add tooltip element
+  tooltipParentElement.append('div').attr('id', "d3-funnel-js-tooltip").attr('class', 'd3-funnel-js-tooltip');
+  var d3Svg = container.append('svg').attr('class', 'd3-funnel-js').attr('id', id).attr('width', responsive !== null && responsive !== void 0 && responsive.width ? "100%" : width).attr('height', responsive !== null && responsive !== void 0 && responsive.height ? "100%" : height).attr('viewBox', "0 0 ".concat(width, " ").concat(height)).attr('preserveAspectRatio', 'xMidYMin meet');
+  getRootSvgGroup(id, margin);
+  return d3Svg;
+};
+var updateSVGGroup = function updateSVGGroup(id, margin) {
+  var group = getRootSvgGroup(id);
+  group === null || group === void 0 || group.attr('transform', "translate(".concat(margin.left, ", ").concat(margin.top, ")"));
+};
+
+/**
+ * Update the root SVG [demnsions, transform] 
+ */
+var updateRootSVG = exports.updateRootSVG = function updateRootSVG(_ref2) {
+  var context = _ref2.context,
+    rotateFrom = _ref2.rotateFrom,
+    rotateTo = _ref2.rotateTo;
+  var id = context.getId();
+  var responsive = context.getResponsive();
+  var width = context.getWidth();
+  var height = context.getHeight();
+  var d3Svg = id ? getRootSvg(id) : undefined;
+  if (d3Svg) {
+    var root = d3Svg;
+    // .transition()
+    // .delay(500)
+    // .duration(1000)
+
+    if (!isNaN(width) && !isNaN(height)) {
+      if (responsive !== null && responsive !== void 0 && responsive.width) {
+        d3Svg.attr("width", "100%");
+      } else {
+        d3Svg.attr("width", width);
+      }
+      if (responsive !== null && responsive !== void 0 && responsive.height) {
+        d3Svg.attr("height", "100%");
+      } else {
+        d3Svg.attr("height", height);
+      }
+      d3Svg.attr('viewBox', "0 0 ".concat(width, " ").concat(height));
+    }
+    if (!isNaN(rotateTo) && !isNaN(rotateTo)) {
+      var centerX = 0;
+      var centerY = 0;
+      root.attrTween('transform', function () {
+        return function (t) {
+          return "rotate(".concat((1 - t) * rotateFrom + t * rotateTo, " ").concat(centerX, " ").concat(centerY, ")");
+        };
+      }).on('end', function () {});
+    }
+  }
+};
+var gradientMakeVertical = exports.gradientMakeVertical = function gradientMakeVertical(_ref3) {
+  var _getRootSvg;
+  var id = _ref3.id;
+  var gradients = (_getRootSvg = getRootSvg(id)) === null || _getRootSvg === void 0 || (_getRootSvg = _getRootSvg.select('defs')) === null || _getRootSvg === void 0 ? void 0 : _getRootSvg.selectAll('linearGradient');
+  if (gradients) {
+    gradients.attr('x1', '0').attr('x2', '0').attr('y1', '0').attr('y2', '1');
+  }
+};
+var gradientMakeHorizontal = exports.gradientMakeHorizontal = function gradientMakeHorizontal(_ref4) {
+  var _getRootSvg2;
+  var id = _ref4.id;
+  var gradients = (_getRootSvg2 = getRootSvg(id)) === null || _getRootSvg2 === void 0 || (_getRootSvg2 = _getRootSvg2.select('defs')) === null || _getRootSvg2 === void 0 ? void 0 : _getRootSvg2.selectAll('linearGradient');
+  if (gradients) {
+    gradients.attr('x1', null).attr('x2', null).attr('y1', null).attr('y2', null);
+  }
 };
 
 /**
  * Apply the color / gradient to each path
  */
-var onEachPathHandler = function onEachPathHandler(_ref7) {
-  var context = _ref7.context;
+var onEachPathHandler = function onEachPathHandler(_ref5) {
+  var context = _ref5.context;
   return function (d, i, nodes) {
     var id = context.getId();
     var is2d = context.is2d();
@@ -5623,13 +6043,14 @@ var onEachPathHandler = function onEachPathHandler(_ref7) {
     }
   };
 };
-var onEachPathCallbacksHandler = function onEachPathCallbacksHandler(_ref8) {
-  var context = _ref8.context;
+var onEachPathCallbacksHandler = function onEachPathCallbacksHandler(_ref6) {
+  var context = _ref6.context;
   return function (d, i, nodes) {
     var callbacks = context.getCallBacks();
     var d3Path = (0, _d3Selection.select)(nodes[i]);
-    var addMouseHandler = addMouseEventIfNotExists({
-      context: context
+    var addMouseHandler = (0, _d3Handlers.addMouseEventIfNotExists)({
+      context: context,
+      updateLinePositions: updateLinePositions
     });
     addMouseHandler(d3Path, typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.click) === 'function' ? callbacks.click : undefined, typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.tooltip) === 'function' ? callbacks.tooltip : undefined, {
       index: i
@@ -5640,8 +6061,8 @@ var onEachPathCallbacksHandler = function onEachPathCallbacksHandler(_ref8) {
 /**
  * Get the data nfo for each path
  */
-var getDataInfo = function getDataInfo(_ref9) {
-  var context = _ref9.context;
+var getDataInfo = function getDataInfo(_ref7) {
+  var context = _ref7.context;
   return function (d, i) {
     var is2d = context.is2d();
     var data = {
@@ -5661,9 +6082,9 @@ var getDataInfo = function getDataInfo(_ref9) {
 /**
  * Draw the SVG paths
  */
-var drawPaths = exports.drawPaths = function drawPaths(_ref10) {
-  var context = _ref10.context,
-    definitions = _ref10.definitions;
+var drawPaths = exports.drawPaths = function drawPaths(_ref8) {
+  var context = _ref8.context,
+    definitions = _ref8.definitions;
   var id = context.getId();
   var rootSvg = getRootSvgGroup(id);
   updateRootSVG({
@@ -5686,7 +6107,7 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref10) {
       return d.path;
     }).attr('data-info', getDataInfoHandler).attr('opacity', 0).attr("stroke-width", '0').transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
       return i * 100;
-    }).duration(1000).attr('opacity', 1).each(pathHandler).on("end", function (d, i, nodes) {
+    }).duration(550).attr('opacity', 1).each(pathHandler).on("end", function (d, i, nodes) {
       var pathElement = (0, _d3Selection.select)(this);
       pathElement.style("pointer-events", "all");
       pathCallbackHandler(d, i, nodes);
@@ -5695,7 +6116,7 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref10) {
     // Update existing paths
     paths.merge(enterPaths).style("pointer-events", "none").transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
       return i * 100;
-    }).duration(1000).attr('d', function (d) {
+    }).duration(550).attr('d', function (d) {
       return d.path;
     }).attr('data-info', getDataInfoHandler).attr("stroke-width", '0').attr('opacity', 1).each(pathHandler).on("end", function (d, i, nodes) {
       var pathElement = (0, _d3Selection.select)(this);
@@ -5706,10 +6127,10 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref10) {
     // Exit and remove old paths
     paths.exit().transition().ease(_d3Ease.easePolyInOut).delay(function (d, i) {
       return i * 100;
-    }).duration(1000).attr('opacity', 0).attr("stroke-width", '0').each(function () {
+    }).duration(550).attr('opacity', 0).attr("stroke-width", '0').each(function () {
       var path = (0, _d3Selection.select)(this);
       path.on('end', function () {
-        removeClickEvent(path);
+        (0, _d3Handlers.removeClickEvent)(path);
       });
     }).remove();
     return paths;
@@ -5719,8 +6140,8 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref10) {
 /**
  * SVG texts positioning according to the selected direction
  */
-var onEachTextHandler = function onEachTextHandler(_ref11) {
-  var offset = _ref11.offset;
+var onEachTextHandler = function onEachTextHandler(_ref9) {
+  var offset = _ref9.offset;
   return function (d, i) {
     var padding = 5;
     var bbox = this.getBBox();
@@ -5734,17 +6155,19 @@ var onEachTextHandler = function onEachTextHandler(_ref11) {
   };
 };
 
-// Function to update line positions
-var updateLinePositions = function updateLinePositions(_ref12) {
-  var context = _ref12.context;
-  var _context$getDimension2 = context.getDimensions({
+/**
+ * Update Line positions
+ */
+var updateLinePositions = function updateLinePositions(_ref10) {
+  var context = _ref10.context;
+  var _context$getDimension = context.getDimensions({
       context: context,
       margin: false
     }),
-    width = _context$getDimension2.width,
-    height = _context$getDimension2.height,
-    xFactor = _context$getDimension2.xFactor,
-    yFactor = _context$getDimension2.yFactor;
+    width = _context$getDimension.width,
+    height = _context$getDimension.height,
+    xFactor = _context$getDimension.xFactor,
+    yFactor = _context$getDimension.yFactor;
   var margin = context.getMargin();
   var info = context.getInfo();
   var vertical = context.isVertical();
@@ -5759,8 +6182,8 @@ var updateLinePositions = function updateLinePositions(_ref12) {
 /**
  * Handle the SVG text display on the graph
  */
-var drawInfo = exports.drawInfo = function drawInfo(_ref13) {
-  var context = _ref13.context;
+var drawInfo = exports.drawInfo = function drawInfo(_ref11) {
+  var context = _ref11.context;
   var id = context.getId();
   var margin = context.getMargin();
   var info = context.getInfo();
@@ -5778,13 +6201,23 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref13) {
     var noMarginHeight = height - margin.top - margin.bottom;
     var noMarginWidth = width - margin.left - margin.right;
     var noMarginSpacing = (!vertical ? noMarginWidth : noMarginHeight) / info.length;
+    var addGroupLabelHandler = (0, _d3Handlers.addLabelMouseEventIfNotExists)({
+      context: context
+    });
     var calcTextPos = function calcTextPos(i) {
-      return noMarginSpacing * i + (!vertical ? margin.left : margin.top) + noMarginSpacing / textGap;
+      return noMarginSpacing * i + (!vertical ? margin.left + margin.text.left : margin.top + margin.text.left) + noMarginSpacing / textGap;
     };
+    var format = context.getFormat();
+    var labelFormatCallback = function labelFormatCallback(value) {
+      return (0, _number.formatNumber)(value);
+    };
+    if (typeof (format === null || format === void 0 ? void 0 : format.value) === "function") {
+      labelFormatCallback = format.value;
+    }
     getInfoSvgGroup(id, margin).selectAll('g.label__group').data(info).join(function (enter) {
       return enter.append("g").attr("class", "label__group").each(function (d, i) {
-        var x = !vertical ? calcTextPos(i) : margin.text;
-        var y = !vertical ? margin.text : calcTextPos(i);
+        var x = !vertical ? calcTextPos(i) : margin.text.left;
+        var y = !vertical ? margin.text.top : calcTextPos(i);
         var offsetValue = {
           value: 0
         };
@@ -5793,7 +6226,7 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref13) {
         });
         var g = (0, _d3Selection.select)(this);
         g.append("text").attr("class", "label__value").attr('x', x).attr('y', y).text(function (d) {
-          return d.value;
+          return labelFormatCallback(d.value);
         }).each(textHandlerValue);
         var textHandlerTitle = onEachTextHandler({
           offset: offsetValue
@@ -5807,35 +6240,43 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref13) {
         g.append("text").attr("class", "label__percentage").attr('x', x).attr('y', y).text(function (d) {
           return d.percentage;
         }).each(textHandlerPercentage);
+        (0, _d3Handlers.removeClickEvent)(g);
+        addGroupLabelHandler(g);
       });
     }, function (update) {
       return update.each(function (d, i) {
-        var x = !vertical ? calcTextPos(i) : margin.text;
-        var y = !vertical ? margin.text : calcTextPos(i);
+        var x = !vertical ? calcTextPos(i) : margin.text.left;
+        var y = !vertical ? margin.text.top : calcTextPos(i);
         var offsetValue = {
           value: 0
         };
         var textHandlerValue = onEachTextHandler({
           offset: offsetValue
         });
-        (0, _d3Selection.select)(this).select(".label__value").attr('x', x).attr('y', y).text(function (d) {
-          return d.value;
+        var g = (0, _d3Selection.select)(this);
+        g.select(".label__value").attr('x', x).attr('y', y).text(function (d) {
+          return labelFormatCallback(d.value);
         }).style('opacity', 0.5).transition().duration(400).ease(_d3Ease.easePolyInOut).style('opacity', 1).each(textHandlerValue);
         var textHandlerTitle = onEachTextHandler({
           offset: offsetValue
         });
-        (0, _d3Selection.select)(this).select(".label__title").attr('x', x).attr('y', y).text(function (d) {
+        g.select(".label__title").attr('x', x).attr('y', y).text(function (d) {
           return d.label;
         }).each(textHandlerTitle);
         var textHandlerPercentage = onEachTextHandler({
           offset: offsetValue
         });
-        (0, _d3Selection.select)(this).select(".label__percentage").attr('x', x).attr('y', y).text(function (d) {
+        g.select(".label__percentage").attr('x', x).attr('y', y).text(function (d) {
           return d.percentage;
         }).each(textHandlerPercentage);
+        (0, _d3Handlers.removeClickEvent)(g);
+        addGroupLabelHandler(g);
       });
     }, function (exit) {
-      return exit.remove();
+      return exit.each(function () {
+        var g = (0, _d3Selection.select)(this);
+        (0, _d3Handlers.removeClickEvent)(g);
+      }).remove();
     });
 
     // display graph dividers
@@ -5852,14 +6293,20 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref13) {
     }).attr("".concat(!vertical ? 'y' : 'x', "2"), !vertical ? height : width);
 
     // Update selection
-    lines.merge(enterLines).transition().duration(500).attr("".concat(!vertical ? 'x' : 'y', "1"), function (d, i) {
+    lines.merge(enterLines)
+    // .transition()
+    // .duration(550)
+    .attr("".concat(!vertical ? 'x' : 'y', "1"), function (d, i) {
       return noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top);
     }).attr("".concat(!vertical ? 'y' : 'x', "1"), 0).attr("".concat(!vertical ? 'x' : 'y', "2"), function (d, i) {
       return noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top);
     }).attr("".concat(!vertical ? 'y' : 'x', "2"), !vertical ? height : width);
 
     // Exit selection
-    lines.exit().transition().duration(500).attr('stroke-opacity', 0).remove();
+    lines.exit()
+    // .transition()
+    // .duration(550)
+    .attr('stroke-opacity', 0).remove();
 
     // Update line positions initially
     updateLinePositions({
@@ -5902,16 +6349,21 @@ var applyGradient = function applyGradient(id, d3Path, colors, index, gradientDi
   // Apply the gradient to the path
   d3Path.attr('fill', "url(\"#".concat(gradientId, "\")")).attr('stroke', "url(\"#".concat(gradientId, "\")"));
 };
-var destroySVG = exports.destroySVG = function destroySVG(_ref14) {
-  var context = _ref14.context;
+var destroySVG = exports.destroySVG = function destroySVG(_ref12) {
+  var context = _ref12.context;
   return function () {
-    var svg = getRootSvg(context.getId());
+    var id = context.getId();
+    var svg = getRootSvg(id);
     if (svg) {
       // destroy tooltip
       var tooltipElement = (0, _d3Selection.select)("#d3-funnel-js-tooltip");
       if (tooltipElement) {
         tooltipElement.remove();
       }
+      if (context.debouncedResizeHandler) {
+        context.debouncedResizeHandler.cancel();
+      }
+      (0, _d3Selection.select)(window).on("resize.".concat(id), null);
 
       // destroy all in specific path listeners
       var paths = svg.selectAll('path');
@@ -5933,8 +6385,27 @@ var destroySVG = exports.destroySVG = function destroySVG(_ref14) {
     }
   };
 };
+var updateEvents = exports.updateEvents = function updateEvents(_ref13) {
+  var _select;
+  var context = _ref13.context,
+    events = _ref13.events;
+  // register resize handlers
+  var id = context.id;
+  var resizeEventExists = !!((_select = (0, _d3Selection.select)(window)) !== null && _select !== void 0 && _select.on("resize.".concat(id)));
+  var resize = context.getResize();
+  if (resize && !resizeEventExists) {
+    var onResize = events === null || events === void 0 ? void 0 : events['onResize'];
+    var debouncedResizeHandler = (0, _lodash.default)(onResize, 0);
+    context.debouncedResizeHandler = debouncedResizeHandler;
+    debouncedResizeHandler();
+    (0, _d3Selection.select)(window).on("resize.".concat(id), debouncedResizeHandler);
+  }
+  if (!resize && resizeEventExists) {
+    (0, _d3Selection.select)(window).on("resize.".concat(id), null);
+  }
+};
 
-},{"d3-ease":16,"d3-selection":52,"d3-timer":101,"d3-transition":106}],139:[function(require,module,exports){
+},{"./d3-handlers":139,"./number":142,"d3-ease":16,"d3-selection":52,"d3-transition":106,"lodash.debounce":134}],141:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5958,6 +6429,7 @@ function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbol
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _readOnlyError(r) { throw new TypeError('"' + r + '" is read-only'); }
 function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
 function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
 function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
@@ -5982,12 +6454,29 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
  *      displayPercent: false,
  *      margin: { ?top, ?right, ?bottom, ?left, text },
  *      gradientDirection: 'vertical',
+ * 
+ *      -- callbacks definitions 
  *      callbacks: {
- *          'click': () => {}
- *      }
- *      details: false
+ *          -- click on funnel areas
+ *          'click': ({ index, value, label, subLabel, sectionIndex }) => {},
+ *          -- override for the OOTB tooltip - funnel areas
+ *          'tooltip': (event, { label, value }) => {}
+ *      },
+ * 
+ *      -- display the OOTB tooltip - on / off
  *      tooltip: true,
- *      responsive: false
+ * 
+ *      -- remove the text - only graph will be display
+ *      details: false,
+ * 
+ *      -- resize the SVG using handler 
+ *      resize: true,
+ * 
+ *      -- responsive SVG using 100% for the width / height
+ *      responsive: false,
+ *      responsiveWidth: false,
+ *      responsiveHeight: false,
+ * 
  * }
  *  TODO: outlines: for two dimensions graph display
  */
@@ -5997,13 +6486,14 @@ var FunnelGraph = /*#__PURE__*/function () {
     _classCallCheck(this, FunnelGraph);
     this.id = this.generateId(), this.containerSelector = options.container;
     this.gradientDirection = options.gradientDirection && options.gradientDirection === 'vertical' ? 'vertical' : 'horizontal';
-    this.setResponsive(options.hasOwnProperty("responsive") ? options.responsive : false);
     this.setDetails(options.hasOwnProperty('details') ? options.details : true);
     this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
     this.getDirection(options === null || options === void 0 ? void 0 : options.direction);
     this.setValues((options === null || options === void 0 || (_options$data = options.data) === null || _options$data === void 0 ? void 0 : _options$data.values) || []);
     this.setLabels((options === null || options === void 0 || (_options$data2 = options.data) === null || _options$data2 === void 0 ? void 0 : _options$data2.labels) || []);
     this.setSubLabels((options === null || options === void 0 || (_options$data3 = options.data) === null || _options$data3 === void 0 ? void 0 : _options$data3.subLabels) || []);
+    this.setResize(options === null || options === void 0 ? void 0 : options.resize);
+    this.setResponsive(options === null || options === void 0 ? void 0 : options.responsive, options === null || options === void 0 ? void 0 : options.responsiveWidth, options === null || options === void 0 ? void 0 : options.responsiveHeight);
     this.percentages = this.createPercentages();
     this.colors = (options === null || options === void 0 || (_options$data4 = options.data) === null || _options$data4 === void 0 ? void 0 : _options$data4.colors) || (0, _colors.getDefaultColors)(this.is2d() ? this.getSubDataSize() : 2);
     this.displayPercent = options.displayPercent || false;
@@ -6012,12 +6502,16 @@ var FunnelGraph = /*#__PURE__*/function () {
       right: 60,
       bottom: 60,
       left: 60,
-      text: 10
+      text: {
+        left: 0,
+        top: 10
+      }
     };
     this.setMargin(options === null || options === void 0 ? void 0 : options.margin);
-    var height = options.height || (0, _d.getContainer)(this.containerSelector).clientHeight;
-    var width = options.width || (0, _d.getContainer)(this.containerSelector).clientWidth;
+    var height = options.height || (0, _d.getContainer)(this.containerSelector).node().clientHeight;
+    var width = options.width || (0, _d.getContainer)(this.containerSelector).node().clientWidth;
     this.callbacks = options === null || options === void 0 ? void 0 : options.callbacks;
+    this.format = options === null || options === void 0 ? void 0 : options.format;
     this.height = height;
     this.width = width;
     this.origHeight = height;
@@ -6103,38 +6597,13 @@ var FunnelGraph = /*#__PURE__*/function () {
     value: function isVertical() {
       return this.direction === 'vertical';
     }
-  }, {
-    key: "setDirection",
-    value: function setDirection(d) {
-      this.direction = d;
-    }
-  }, {
-    key: "setHeight",
-    value: function setHeight(h) {
-      this.height = h;
-    }
-  }, {
-    key: "setWidth",
-    value: function setWidth(w) {
-      this.width = w;
-    }
-  }, {
-    key: "setTooltip",
-    value: function setTooltip(bool) {
-      this.tooltip = bool;
-    }
-  }, {
-    key: "setDetails",
-    value: function setDetails(bool) {
-      this.details = bool;
-    }
 
     /**
-     * Get the graph width
-     * 
-     * @param {*} margin included if true or else return the original width
-     * @returns 
-     */
+        * Get the graph width
+        * 
+        * @param {*} margin included if true or else return the original width
+        * @returns 
+        */
   }, {
     key: "getWidth",
     value: function getWidth() {
@@ -6198,14 +6667,17 @@ var FunnelGraph = /*#__PURE__*/function () {
   }, {
     key: "getMargin",
     value: function getMargin() {
-      return this.margin;
-    }
-  }, {
-    key: "setMargin",
-    value: function setMargin(margin) {
-      if (margin && _typeof(margin) === 'object') {
-        this.margin = _objectSpread(_objectSpread({}, this.margin), margin);
+      this.margin.text = this.margin.text || {
+        left: 0,
+        top: 0
+      };
+      if (!isNaN(this.margin.text)) {
+        this.margin.text = {
+          top: this.margin.text,
+          left: 0
+        };
       }
+      return this.margin;
     }
   }, {
     key: "getDataSize",
@@ -6216,7 +6688,6 @@ var FunnelGraph = /*#__PURE__*/function () {
     key: "getSubDataSize",
     value: function getSubDataSize() {
       var _this$values;
-      // TODO:
       return ((_this$values = this.values) === null || _this$values === void 0 || (_this$values = _this$values[0]) === null || _this$values === void 0 ? void 0 : _this$values.length) || 0;
     }
   }, {
@@ -6240,6 +6711,11 @@ var FunnelGraph = /*#__PURE__*/function () {
       return this.callbacks;
     }
   }, {
+    key: "getFormat",
+    value: function getFormat() {
+      return this.format;
+    }
+  }, {
     key: "setLinePositions",
     value: function setLinePositions(position) {
       this.linePositions = position || [];
@@ -6253,11 +6729,6 @@ var FunnelGraph = /*#__PURE__*/function () {
     key: "getResponsive",
     value: function getResponsive() {
       return this.responsive;
-    }
-  }, {
-    key: "setResponsive",
-    value: function setResponsive(value) {
-      this.responsive = value;
     }
   }, {
     key: "getValues2d",
@@ -6283,6 +6754,74 @@ var FunnelGraph = /*#__PURE__*/function () {
         }));
       });
       return percentages;
+    }
+  }, {
+    key: "getResize",
+    value: function getResize() {
+      return this.resize;
+    }
+  }, {
+    key: "setResize",
+    value: function setResize(resize) {
+      this.resize = resize;
+    }
+  }, {
+    key: "setDirection",
+    value: function setDirection(d) {
+      this.direction = d;
+    }
+  }, {
+    key: "setHeight",
+    value: function setHeight(h) {
+      this.height = h;
+    }
+  }, {
+    key: "setWidth",
+    value: function setWidth(w) {
+      this.width = w;
+    }
+  }, {
+    key: "setTooltip",
+    value: function setTooltip(bool) {
+      this.tooltip = bool;
+    }
+  }, {
+    key: "setDetails",
+    value: function setDetails(bool) {
+      this.details = bool;
+    }
+  }, {
+    key: "setMargin",
+    value: function setMargin(margin) {
+      if (margin && _typeof(margin) === 'object') {
+        this.margin = _objectSpread(_objectSpread({}, this.margin), margin);
+      }
+    }
+  }, {
+    key: "setResponsive",
+    value: function setResponsive(isResponsive, isResponsiveWidth, isResponsiveHeight) {
+      var responsive = {};
+      if (isResponsive) {
+        responsive.width = true;
+        responsive.height = true;
+      }
+      if (isResponsiveWidth) {
+        responsive.width = true;
+      }
+      if (isResponsiveHeight) {
+        responsive.height = true;
+      }
+      this.responsive = responsive;
+    }
+  }, {
+    key: "setResponsiveWidth",
+    value: function setResponsiveWidth(isResponsive) {
+      this.setResponsive(undefined, isResponsive);
+    }
+  }, {
+    key: "setResponsiveHeight",
+    value: function setResponsiveHeight(isResponsive) {
+      this.setResponsive(undefined, undefined, isResponsive);
     }
   }, {
     key: "setSubLabels",
@@ -6433,7 +6972,7 @@ var FunnelGraph = /*#__PURE__*/function () {
 
         // update value 
         var valueNumber = _this2.is2d() ? _this2.getValues2d()[index] : _this2.values[index];
-        infoItem.value = (0, _number.formatNumber)(valueNumber);
+        infoItem.value = valueNumber;
 
         // update label
         infoItem.label = ((_this2$labels = _this2.labels) === null || _this2$labels === void 0 ? void 0 : _this2$labels[index]) || 'NA';
@@ -6467,8 +7006,30 @@ var FunnelGraph = /*#__PURE__*/function () {
       (0, _d.drawInfo)({
         context: this.getContext()
       });
+      (0, _d.updateEvents)({
+        context: this.getContext(),
+        events: {
+          onResize: this.onResize.bind(this)
+        }
+      });
     }
-
+  }, {
+    key: "onResize",
+    value: function onResize() {
+      var context = this;
+      var container = (0, _d.getContainer)(context.containerSelector);
+      if (container) {
+        var containerNode = container.node();
+        var newWidth = +containerNode.clientWidth - 200;
+        var newHeight = +containerNode.clientHeight - 200;
+        var aspectRatio = 1 / 1;
+        newWidth = newWidth * aspectRatio;
+        newHeight = newHeight * aspectRatio;
+        context.setWidth(newWidth);
+        context.setHeight(newHeight);
+        context.drawGraph();
+      }
+    }
     /**
      * Create the main SVG and draw the graph
      */
@@ -6499,44 +7060,88 @@ var FunnelGraph = /*#__PURE__*/function () {
   }, {
     key: "updateData",
     value: function updateData(d) {
+      var _this3 = this;
       if (d) {
-        if (typeof d.responsive !== 'undefined') {
-          this.setResponsive(d.responsive);
-        }
-        if (typeof d.width !== 'undefined') {
-          this.setWidth(d.width);
-        }
-        if (typeof d.height !== 'undefined') {
-          this.setHeight(d.height);
-        }
-        if (typeof d.margin !== 'undefined') {
-          this.setMargin(d.margin);
-        }
-        if (typeof d.details !== 'undefined') {
-          this.setDetails(d.details);
-        }
-        if (typeof d.tooltip !== 'undefined') {
-          this.setTooltip(d.tooltip);
-        }
-        if (typeof d.values !== 'undefined') {
-          // Update values
-          this.setValues(_toConsumableArray(d.values));
-        }
-        if (typeof d.labels !== 'undefined') {
-          // Update labels if specified in the new data
-          this.setLabels(_toConsumableArray(d.labels));
-        }
-        if (typeof d.colors !== 'undefined') {
-          // Update colors if specified, or use default colors as a fallback
-          this.colors = d.colors || (0, _colors.getDefaultColors)(this.is2d() ? this.getSubDataSize() : 2);
+        var validate = function validate(arg) {
+          return typeof arg !== 'undefined';
+        };
+        var mapMethods = [{
+          key: "resize",
+          fn: function fn(arg) {
+            return _this3.setResize(arg);
+          }
+        }, {
+          key: "responsive",
+          fn: function fn(arg) {
+            return _this3.setResponsive(arg);
+          }
+        }, {
+          key: "responsiveWidth",
+          fn: function fn(arg) {
+            return _this3.setResponsiveWidth(arg);
+          }
+        }, {
+          key: "responsiveHeight",
+          fn: function fn(arg) {
+            return _this3.setResponsiveHeight(arg);
+          }
+        }, {
+          key: "width",
+          fn: function fn(arg) {
+            return _this3.setWidth(arg);
+          }
+        }, {
+          key: "height",
+          fn: function fn(arg) {
+            return _this3.setHeight(arg);
+          }
+        }, {
+          key: "margin",
+          fn: function fn(arg) {
+            return _this3.setMargin(arg);
+          }
+        }, {
+          key: "details",
+          fn: function fn(arg) {
+            return _this3.setDetails(arg);
+          }
+        }, {
+          key: "tooltip",
+          fn: function fn(arg) {
+            return _this3.setTooltip(arg);
+          }
+        }, {
+          key: "values",
+          fn: function fn(arg) {
+            return _this3.setValues(arg);
+          }
+        }, {
+          key: "labels",
+          fn: function fn(arg) {
+            return _this3.setLabels(arg);
+          }
+        }, {
+          key: "subLabels",
+          fn: function fn(arg) {
+            return _this3.setSubLabels(arg);
+          }
+        }, {
+          key: "colors",
+          fn: function fn(arg) {
+            return _this3.colors = arg || (0, _colors.getDefaultColors)(_this3.is2d() ? _this3.getSubDataSize() : 2);
+          }
+        }];
+        for (var _i = 0, _mapMethods = mapMethods; _i < _mapMethods.length; _i++) {
+          var method = _mapMethods[_i];
+          var key = method.key;
+          var arg = d[key];
+          if (validate(arg)) {
+            method.fn(arg);
+          }
         }
 
         // Calculate percentages for the graph based on the updated or existing values
         this.percentages = this.createPercentages();
-        if (typeof d.subLabels !== 'undefined') {
-          // Update subLabels if specified in the new data
-          this.setSubLabels(_toConsumableArray(d.subLabels));
-        }
       }
       this.drawGraph();
     }
@@ -6544,7 +7149,7 @@ var FunnelGraph = /*#__PURE__*/function () {
 }();
 var _default = exports.default = FunnelGraph;
 
-},{"./colors":137,"./d3":138,"./number":140,"./path":141,"./utils":142,"nanoid":134}],140:[function(require,module,exports){
+},{"./colors":138,"./d3":140,"./number":142,"./path":143,"./utils":144,"nanoid":135}],142:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6558,7 +7163,7 @@ var formatNumber = exports.formatNumber = function formatNumber(number) {
   return Number(number).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
 };
 
-},{}],141:[function(require,module,exports){
+},{}],143:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6659,7 +7264,11 @@ var getCrossAxisPoints = exports.getCrossAxisPoints = function getCrossAxisPoint
     totalValues.push(_toConsumableArray(totalValues).pop());
     // get points for path "A"
     points.push(totalValues.map(function (value) {
-      var point = (0, _number.roundPoint)((max - value) / max * dimension);
+      if (!value) {
+        return 0;
+      }
+      var calcValue = (0, _number.roundPoint)(Math.max(max - value, 1) / max * dimension);
+      var point = Math.min(calcValue, dimension - 1);
       return isNaN(point) ? 0 : point;
     }));
     // percentages with duplicated last value
@@ -6704,7 +7313,7 @@ var getCrossAxisPoints = exports.getCrossAxisPoints = function getCrossAxisPoint
     // which are symmetric. So we get the points for "A" and then get points for "D" by subtracting "A"
     // points from graph cross dimension length
     points.push(aggregatedValues.map(function (value) {
-      return (0, _number.roundPoint)((_max - value) / _max * dimension);
+      return (0, _number.roundPoint)(Math.max(_max - value, 1) / _max * dimension);
     }));
     points.push(points[0].map(function (point) {
       return fullDimension - point;
@@ -6812,17 +7421,17 @@ var createVerticalPath = function createVerticalPath(index, X, XNext, Y) {
   return str;
 };
 
-},{"./number":140}],142:[function(require,module,exports){
+},{"./number":142}],144:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.normalizeArray = void 0;
-var _normalizeArray = function _normalizeArray(arr) {
+var _normalizeArray2 = function _normalizeArray(arr) {
   // Helper function to check if a single cell is considered empty
   var isEmpty = function isEmpty(el) {
-    return Array.isArray(el) ? _normalizeArray(el) : el === null || el === undefined;
+    return Array.isArray(el) ? _normalizeArray2(el) : el === null || el === undefined;
   };
 
   // Check if every cell in the array is empty
@@ -6832,7 +7441,7 @@ var normalizeArray = exports.normalizeArray = function normalizeArray(arr) {
   // If the array is empty, return an empty array
   var nArray = [];
   try {
-    nArray = _normalizeArray(arr) ? [] : arr;
+    nArray = _normalizeArray2(arr) ? [] : arr;
   } catch (e) {
     console.warn("normalizing array function failed with errors: ", e);
   }

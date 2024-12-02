@@ -1,190 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- TODO: Refactor Just to make it Clean -->
+
 <head>
     <meta charset="UTF-8">
     <title>SVG Funnel</title>
     <link rel="stylesheet" type="text/css" href="../dist/css/funnel-graph.min.css">
+    <link rel="stylesheet" type="text/css" href="example-style.css">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" type="image/png" href="favicon.png" />
-    <style>
-        html,
-        body {
-            min-height: 100%;
-        }
-
-        body {
-            margin: 0;
-            background: #393862;
-        }
-
-        .funnel {
-            height: 100%;
-            height: 100%;
-        }
-
-        .flex {
-            display: flex;
-        }
-
-        .row {
-            flex-direction: row;
-        }
-
-        .col {
-            flex-direction: column;
-        }
-
-        .method-buttons {
-            align-items: center;
-            justify-content: start;
-            padding: 8px;
-        }
-
-        button {
-            width: 100px;
-            margin: 4px;
-            padding: 4px;
-        }
-
-        .funnel-wrapper {
-            align-items: center;
-            justify-content: start;
-            width: 100%;
-            height: 100%;
-        }
-
-        .main-wrapper {
-            height: 100vh;
-        }
-
-        button {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: auto;
-            background-color: #f0f0f0;
-            margin: 0;
-
-            background-color: white;
-            /* White background */
-            border: none;
-            /* Remove borders */
-            color: navy;
-            /* Green text */
-
-            text-align: center;
-            /* Centered text */
-            text-decoration: none;
-            /* Remove underline */
-            display: inline-block;
-            /* Get the element to line up horizontally */
-            font-size: 12px;
-            /* Increase font size */
-            margin: 4px 2px;
-            /* Add some margin */
-            cursor: pointer;
-            /* Pointer/hand icon */
-            border-radius: 12px;
-            /* Rounded corners */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            /* Subtle shadow */
-            transition: background-color 0.3s, box-shadow 0.3s;
-            /* Smooth transitions */
-        }
-    </style>
 </head>
 
 <body>
-    <div class="main-wrapper flex row" style="position: relative">
-        <div class="flex method-buttons col">
-            <button id="makeVertical">Vertical</button>
-            <button id="makeHorizontal">Horizontal</button>
-            <button id="toggleDirection">Toggle Direction</button>
-            <button id="gradientMakeVertical">Vertical Gradient</button>
-            <button id="gradientMakeHorizontal">Horizontal Gradient </button>
-            <button id="gradientToggleDirection">Gradient Toggle Direction</button>
-            <button id="useData1">DataSet 1</button>
-            <button id="useData2">DataSet 2</button>
-            <button id="useData3">DataSet 3</button>
-            <button id="useData4">DataSet 4 (empty array [])</button>
-            <button id="useData5">DataSet 5 (empty zeros [0, 0...])</button>
-            <button id="hideTooltip">Hide Tooltip</button>
-            <button id="hideDetails">Hide Details</button>
-            <button id="showTooltip">Show Tooltip</button>
-            <button id="showDetails">Show Details</button>
-            <button id="setResponsive">Toggle Responsive</button>
-        </div>
-        <div style="width: 100%">
-            <div class="flex funnel-wrapper col">
-                <div class="funnel"></div>
+    <div class="main-wrapper flex row" style="align-items: stretch; width: 100%; height: 100%; padding: 0">
+
+        <!-- buttons container -->
+        <div class="col " id="button-container"></div>
+
+        <!-- graph container -->
+        <div style="width: 100%; height: 100%;">
+            <div class="funnel-wrapper" style="width: 100%; height: 100%">
+                <div class="funnel-graph"  style="width: 100%; height: 100%"></div>
             </div>
-        </div>  
+        </div>
     </div>
 
     <script src="../dist/js/funnel-graph.js"></script>
     <script>
 
-        const emptyExample = {
-            values: []
+        const formatLargeNumber = (num, decimals = 1) => {
+            if (num === 0) return "0";
+
+            const units = ["", "K", "M", "B", "T", "P"];
+            const index = Math.floor(Math.log10(Math.abs(num)) / 3);
+
+            // Ensure the index is valid within the units array
+            if (index >= units.length) {
+                return num.toString(); // Return the number as-is if it's too large
+            }
+
+            const scaledNum = num / Math.pow(1000, index);
+            const roundedNum = scaledNum.toFixed(decimals).replace(/\.0+$/, ''); // Remove trailing .0
+
+            return `${roundedNum}${units[index]}`;
+        }
+
+        // Example datasets
+        const datasets = {
+            emptyExample: { values: [] },
+            emptyZerosExample: { values: [[0, 0, 0], [0, 0, 0], [0, 0, 0]] },
+            closeValuesExample: { values: [[900000, 10000, 1, 1], [309000, 10000, 0, 1], [2100, 550, 1, 11], [235, 2, 2, 1], [1, 0, 0, 1]] },
+            smallValuesExample: { values: [[ 42715, 41395, 41087, 41224, 41266 ], [ 42714, 41395, 41087, 41223, 41266 ], [ 42714, 41395, 41087, 41223, 41266 ], [ 42714, 41395, 41087, 41223, 41266 ]] },
+            dataExample1: { colors: ['#FFB178', '#FF3C8E'], values: [11000, 3000, 240] },
+            dataExample2: { labels: ['Impressions 2', 'Add To Cart 2', 'Buy 2'], colors: ['#FFB178', '#FF3C8E'], values: [12000, 5700, 360] },
+            dataExample3: {
+                labels: ['Impressions', 'Add To Cart', 'Buy'],
+                subLabels: ['Direct', 'Social Media', 'Ads'],
+                colors: [['#FFB178', '#FF78B1', '#FF3C8E'], ['#A0BBFF', '#EC77FF'], ['#A0F9FF', '#7795FF']],
+                values: [[3000, 2500, 6500], [3000, 1700, 1000], [600, 200, 130]]
+            }
         };
 
-        const emptyZerosExample = {
-            values: [
-                [0, 0, 0],
-                [0, 0, 0],
-                [0, 0, 0]
-            ],
-        };
-
-        const dataExample1 = {
-            colors: ['#FFB178', '#FF3C8E'],
-            values: [11000, 3000, 240]
-        };
-
-        const dataExample2 = {
-            labels: ['Impressions 2', 'Add To Cart 2', 'Buy 2'],
-            colors: ['#FFB178', '#FF3C8E'],
-            values: [12000, 5700, 360]
-        };
-
-        const dataExample3 = {
-            labels: ['Impressions', 'Add To Cart', 'Buy'],
-            subLabels: ['Direct', 'Social Media', 'Ads'],
-            colors: [
-                ['#FFB178', '#FF78B1', '#FF3C8E'],
-                ['#A0BBFF', '#EC77FF'],
-                ['#A0F9FF', '#7795FF']
-            ],
-            values: [
-                [3000, 2500, 6500],
-                [3000, 1700, 1000],
-                [600, 200, 130]
-            ],
-        };
-
+        let resize = false;
         let responsive = false;
+        let responsiveWidth = false;
+        let responsiveHeight = false;
+
         const graph = new FunnelGraph({
-            container: '.funnel',
+            container: '.funnel-graph',
             gradientDirection: 'horizontal',
-            data: dataExample3,
-            displayPercent: true,
+            data: datasets.dataExample3,
+            displayPercent: false,
             direction: 'horizontal',
             width: 800,
             height: 300,
             subLabelValue: 'raw',
-            callbacks: {
-                click: (event, metadata) => {
-                    console.log("click handler", metadata);
-                    window.location.href = `example-details.html?index=${metadata.index}`;
-                },
-                // adding a tooltip handler instead of the ootb tooltip display
-                // tooltip: (event, metadata) => {
-                //     console.log("tooltip handler", metadata);
-                // }
-            },
             margin: { top: 120, right: 60, bottom: 60, left: 60, text: 10 },
-            responsive
+            resize,
+            responsive,
+            responsiveWidth,
+            responsiveHeight,
+            callbacks: {
+                click: (event, opts) => {
+                    // path area handler 
+                    window.location.href = `example-details.html?payload=${JSON.stringify((opts || {}))}`;
+                },
+                label: (event, opts) => {
+                    // label handler logic
+                    console.log("label clicked", opts);
+                }
+            },
+            format: {
+                value: (value) => formatLargeNumber(value),
+                tooltip: (value) => formatLargeNumber(value)
+            }
         });
 
         graph.draw();
@@ -193,71 +102,40 @@
             graph?.destroy();
         });
 
-        // direction methods
-        document.querySelector('#makeVertical').addEventListener('click', function () {
-            graph.setWidth(300);
-            graph.setHeight(400);
-            graph.makeVertical();
-        });
+        // Define button actions in metadata
+        const buttonsMetadata = [
+            { id: 'makeVertical', text: 'Vertical', action: () => { graph.setWidth(300); graph.setHeight(400); graph.makeVertical(); } },
+            { id: 'makeHorizontal', text: 'Horizontal', action: () => { graph.setWidth(800); graph.setHeight(300); graph.makeHorizontal(); } },
+            { id: 'toggleDirection', text: 'Toggle Direction', action: () => graph.direction === 'horizontal' ? buttonsMetadata[0].action() : buttonsMetadata[1].action() },
+            { id: 'gradientMakeVertical', text: 'Vertical Gradient', action: () => graph.gradientMakeVertical() },
+            { id: 'gradientMakeHorizontal', text: 'Horizontal Gradient', action: () => graph.gradientMakeHorizontal() },
+            { id: 'gradientToggleDirection', text: 'Gradient Toggle Direction', action: () => graph.gradientToggleDirection() },
+            { id: 'useData1', text: 'DataSet 1', action: () => graph.updateData(datasets.dataExample1) },
+            { id: 'useData2', text: 'DataSet 2', action: () => graph.updateData(datasets.dataExample2) },
+            { id: 'useData3', text: 'DataSet 3', action: () => graph.updateData(datasets.dataExample3) },
+            { id: 'useData4', text: 'DataSet 4 (empty array [])', action: () => graph.updateData(datasets.emptyExample) },
+            { id: 'useData5', text: 'DataSet 5 (empty zeros [0, 0...])', action: () => graph.updateData(datasets.emptyZerosExample) },
+            { id: 'useData6', text: 'DataSet 6 (close values)', action: () => graph.updateData(datasets.closeValuesExample) },
+            { id: 'useData7', text: 'DataSet 7 (Small values)', action: () => graph.updateData(datasets.smallValuesExample) },
+            { id: 'hideTooltip', text: 'Hide Tooltip', action: () => graph.updateData({ tooltip: false }) },
+            { id: 'showTooltip', text: 'Show Tooltip', action: () => graph.updateData({ tooltip: true }) },
+            { id: 'hideDetails', text: 'Hide Details', action: () => graph.updateData({ width: 600, height: 400, details: false, margin: { top: 0, right: 0, bottom: 0, left: 0, text: 0 } }) },
+            { id: 'showDetails', text: 'Show Details', action: () => graph.updateData({ width: 600, height: 400, details: true, margin: { top: 100, right: 80, bottom: 80, left: 80, text: 20 } }) },
+            { id: 'setResize', text: 'Toggle Resize', action: () => { resize = !resize; graph.updateData({ resize }); } },
+            { id: 'setResponsive', text: 'Toggle Responsive', action: () => { responsive = !responsive; graph.updateData({ responsive }); } },
+            { id: 'setResponsiveWidth', text: 'Toggle Responsive Width', action: () => { responsiveWidth = !responsiveWidth; graph.updateData({ responsiveWidth }); } },
+            { id: 'setResponsiveHeight', text: 'Toggle Responsive Height', action: () => { responsiveHeight = !responsiveHeight; graph.updateData({ responsiveHeight }); } }
+        ];
 
-        document.querySelector('#makeHorizontal').addEventListener('click', function () {
-            graph.setWidth(800);
-            graph.setHeight(300);
-            graph.makeHorizontal();
+        // Generate buttons dynamically
+        const buttonContainer = document.getElementById('button-container');
+        buttonsMetadata.forEach(({ id, text, action }) => {
+            const button = document.createElement('button');
+            button.id = id;
+            button.innerText = text;
+            button.addEventListener('click', action);
+            buttonContainer.appendChild(button);
         });
-
-        document.querySelector('#toggleDirection').addEventListener('click', function () {
-            graph.direction === 'horizontal' ? document.querySelector('#makeVertical').click() :
-                document.querySelector('#makeHorizontal').click();
-        });
-
-        // gradient methods
-        document.querySelector('#gradientMakeVertical').addEventListener('click', function () {
-            graph.gradientMakeVertical();
-        });
-
-        document.querySelector('#gradientMakeHorizontal').addEventListener('click', function () {
-            graph.gradientMakeHorizontal();
-        });
-
-        document.querySelector('#gradientToggleDirection').addEventListener('click', function () {
-            graph.gradientToggleDirection();
-        });
-
-        document.querySelector('#useData1').addEventListener('click', function () {
-            graph.updateData(dataExample1);
-        });
-
-        document.querySelector('#useData2').addEventListener('click', function () {
-            graph.updateData(dataExample2);
-        });
-
-        document.querySelector('#useData3').addEventListener('click', function () {
-            graph.updateData(dataExample3);
-        });
-        document.querySelector('#useData4').addEventListener('click', function () {
-            graph.updateData(emptyExample);
-        });
-        document.querySelector('#useData5').addEventListener('click', function () {
-            graph.updateData(emptyZerosExample);
-        });
-        document.querySelector('#hideTooltip').addEventListener('click', function () {
-            graph.updateData({ tooltip: false });
-        });
-        document.querySelector('#hideDetails').addEventListener('click', function () {
-            graph.updateData({ width: 200, height: 200, details: false, margin: { top: 0, right: 0, bottom: 0, left: 0, text: 0 } });
-        });
-        document.querySelector('#showTooltip').addEventListener('click', function () {
-            graph.updateData({ tooltip: true });
-        });
-        document.querySelector('#showDetails').addEventListener('click', function () {
-            graph.updateData({ width: 600, height: 400, details: true, margin: { top: 100, right: 80, bottom: 80, left: 80, text: 20 } });
-        });
-        document.querySelector('#setResponsive').addEventListener('click', function () {
-            responsive = !responsive;
-            graph.updateData({ responsive });
-        });
-
     </script>
 </body>
 

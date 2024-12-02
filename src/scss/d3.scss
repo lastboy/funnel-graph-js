@@ -13,39 +13,38 @@
     height: 30px;
     transition: opacity 0.2s;
 
-    font-family: $font-family;
+    @include apply-font($font-tooltip);
+
     padding: $tooltip-padding;
     border-radius: $tooltip-border-radius;
     border: $tooltip-border;
     background-color: $tooltip-bg;
-    color: $tooltip;
+    color: $tooltip-color;
     z-index: $tooltip-z-index;
 }
 
 .d3-funnel-js {
 
+    @include apply-font($font-main);
+
     display: block;
     margin: auto;
-    font-family: $font-family;
 
     .label__group {
 
         .label__value {
-            font-size: $label-value-font-size;
-            fill: $label-value;
-            line-height: 18px;
+            @include apply-font($font-label-value);
+            fill: $label-value-color;
         }
 
         .label__title {
-            font-size: $label-title-font-size;
-            font-weight: bold;
-            fill: $label-title;
+            @include apply-font($font-label-title);
+            fill: $label-title-color;
         }
 
         .label__percentage {
-            font-size: $label-per-font-size;
-            font-weight: bold;
-            fill: $label-per;
+            @include apply-font($font-label-percentage);
+            fill: $label-per-color;
         }
 
     }

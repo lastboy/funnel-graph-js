@@ -3,18 +3,43 @@
 <h1>
     Drill Down Page
 </h1>
-<p>You click on area: <span id="indexParam"></span> </p>
+<p>You click on area:</p>
 
+<div id="params" class="params-container"></div>
+
+<style>
+.params-container {
+    display: flex;
+    flex-direction: column;
+}
+label {
+    font-weight: bold;
+    padding: 4px;
+}
+</style>
 
 <script>
 
-    function getQueryParams() {
+    const getQueryParams =() => {
         const params = new URLSearchParams(window.location.search);
-        const index = params.get('index');
-        return { index };
+        const payload = params.get('payload');
+        if (payload) {
+            try {
+                const params = JSON.parse(payload);
+                return params;
+            } catch(err) {
+                console.error(err);
+            }
+        }
+        return {}
     }
 
     const params = getQueryParams();
-    document.getElementById('indexParam').textContent = `Index: ${params.index}`;
+    const html = [];
+    for (const [key, value] of Object.entries(params)) {
+        html.push(`<div><label>${key}:</label><span>${value}</span></div>`)
+    }
+
+    document.getElementById('params').innerHTML = html.join("");
 
 </script>

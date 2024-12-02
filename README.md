@@ -67,7 +67,7 @@ var graph = new FunnelGraph({
             console.log(metadata);
         }
     },
-    margin: { top: 120, right: 60, bottom: 60, left: 60, text: 10 }
+    margin: { top: 120, right: 60, bottom: 60, left: 60, text: { left: 10, top: 0 } }
 });
 
 graph.draw();
@@ -83,7 +83,7 @@ graph.draw();
 * **subLabels** to used in the tooltip for two dimentions chart (e.g. ['Direct', ...])
 * **colors** overrides the defaults [ ['#000', ... ], ]
 * **values** of the graph (e.g. [ [3500, ...], ])
-* **margin** for the info text (e.g { ?top, ?right, ?bottom, ?left, text })
+* **margin** for the info text (e.g { ?top, ?right, ?bottom, ?left, text: { ?left, ?top } })
 * **gradientDirection** ('vertical' | 'horizontal')
 * **callbacks** object for handling user actions (e.g. { 'click': () => {} })
     * **click** callback function for click events
@@ -96,6 +96,14 @@ graph.draw();
                 * **subLabel**: The sub-label of the clicked item (if applicable).
     * **tooltip** callback function for tooltip event - overrides the OOTB implementation
         * **Signature**: `(event, { label, value }) => {}`
+    * **label** callback function for label event
+        * **Signature**: `(event, { index, value, label, subLabel, sectionIndex }) => {}`
+
+* **format** Format the text display
+    * **value** value callback function 
+        * **Signature**: `({ value }) => {}`
+    * **tooltip** tooltip callback function 
+        * **Signature**: `(opts) => {}`
 
 * **displayPercent** should be displayed  [true | false],
 * **details** should be displayed [ true | false ]
@@ -103,6 +111,8 @@ graph.draw();
     **Note:** The tooltip display depends on the details display so it can calculate its range according to the dividers.
 * **responsive** when true the SVG's width and height will be set to 100%. And the configured width and height will be set in the viewBox.
     Make sure to set the parent DIVs elements to be 100% as well for resized graph
+* **responsiveWidth**: make exclusive responsive width
+* **responsiveHeight**: make exclusive responsive height
 
 ## Updatable FunnelGraph configuration
 * width

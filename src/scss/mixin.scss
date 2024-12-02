@@ -1,0 +1,9 @@
+
+@mixin apply-font($font) {
+  font-family: map-get($font, font-family);
+  font-size: map-get($font, font-size);
+  font-weight: map-get($font, font-weight);
+  line-height: map-get($font, font-line-height);
+  text-align: map-get($font, font-text-align);
+}
+  

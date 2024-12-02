@@ -1,7 +1,9 @@
-import { select, pointer } from 'd3-selection';
+import { select } from 'd3-selection';
 import 'd3-transition';
-import { timeout } from 'd3-timer';
 import { easePolyInOut } from "d3-ease"
+import debounce from 'lodash.debounce';
+import { addMouseEventIfNotExists, addLabelMouseEventIfNotExists, removeClickEvent } from "./d3-handlers";
+import { formatNumber } from './number';
 
 /**
  * Get the main root SVG element
@@ -55,10 +57,6 @@ const getContainer = (containerSelector) => {
     return select(containerSelector);
 }
 
-const getTooltipElement = () => {
-    return select(`#d3-funnel-js-tooltip`);
-}
-
 /**
  * Create the main SVG element 
  */
@@ -85,8 +83,8 @@ const createRootSVG = ({ context }) => {
         .append('svg')
         .attr('class', 'd3-funnel-js')
         .attr('id', id)
-        .attr('width', responsive ? "100%" : width)
-        .attr('height', responsive ? "100%" : height)
+        .attr('width', responsive?.width ? "100%" : width)
+        .attr('height', responsive?.height ? "100%" : height)
         .attr('viewBox', `0 0 ${width} ${height}`)
         .attr('preserveAspectRatio', 'xMidYMin meet');
 
@@ -114,18 +112,23 @@ const updateRootSVG = ({ context, rotateFrom, rotateTo }) => {
 
     if (d3Svg) {
         const root = d3Svg
-            .transition()
-            .delay(500)
-            .duration(1000)
+            // .transition()
+            // .delay(500)
+            // .duration(1000)
 
         if (!isNaN(width) && !isNaN(height)) {
-            if (!responsive) {
-                d3Svg.attr("width", width);
-                d3Svg.attr("height", height);
-            } else {
+            if (responsive?.width) {
                 d3Svg.attr("width", "100%");
-                d3Svg.attr("height", "100%");
+            } else {
+                d3Svg.attr("width", width);
             }
+
+            if (responsive?.height) {
+                d3Svg.attr("height", "100%");
+            } else {
+                d3Svg.attr("height", height);
+            }
+
             d3Svg.attr('viewBox', `0 0 ${width} ${height}`);
         }
 
@@ -174,159 +177,6 @@ const gradientMakeHorizontal = ({
 
 };
 
-const mouseInfoHandler = ({ context, clickHandler, metadata, tooltip }) => function (e) {
-
-    const { width, height } = context.getDimensions({ context, margin: false })
-    const isVertical = context.isVertical();
-
-    updateLinePositions({ context })
-    const linePositions = context.getLinePositions();
-
-    // Determine the area between the lines
-    const clickPoint = { x: e.offsetX, y: e.offsetY };
-    let areaIndex = linePositions.findIndex((pos, i) => {
-
-        if (!isVertical) {
-            return clickPoint.x >= pos && clickPoint.x <= (linePositions[i + 1] || width);
-        } else {
-            return clickPoint.y >= pos && clickPoint.y <= (linePositions[i + 1] || height);
-        }
-    });
-
-    // values are -1, 0, ...
-    areaIndex++
-
-    const dataInfoItem = JSON.parse(this.getAttribute('data-info'));
-    let dataInfoItemForArea = {};
-    const dataInfoValues = dataInfoItem?.values || [];
-    const dataInfoLabels = dataInfoItem?.labels || [];
-    const dataInfoSubLabels = dataInfoItem?.subLabels || [];
-    const index = metadata.hasOwnProperty("index") ? metadata.index : -1;
-
-    dataInfoItemForArea = {
-        value: dataInfoValues?.[areaIndex],
-        label: dataInfoLabels?.[areaIndex],
-        subLabel: dataInfoSubLabels?.[index],
-        sectionIndex: areaIndex
-    }
-
-    metadata = {
-        ...metadata,
-        ...dataInfoItemForArea
-    };
-
-    if (!tooltip && clickHandler) {
-        clickHandler(e, metadata);
-    }
-
-    return metadata;
-};
-
-const addMouseEventIfNotExists = ({ context }) => (pathElement, clickHandler, tooltipHandler, metadata) => {
-
-    const clickEventExists = !!pathElement?.on('click');
-    if (!clickEventExists && clickHandler) {
-        pathElement?.on('click', mouseInfoHandler({ context, clickHandler, metadata }));
-    }
-
-    if (!context.showDetails()) {
-        pathElement?.on('mouseover', null);
-        pathElement?.on('mousemove', null);
-        pathElement?.on('mouseout', null);
-        return;
-    }
-
-    const overEventExists = !!pathElement.on('mouseover');
-    if (!overEventExists) {
-        let tooltipTimeout;
-
-        function updateTooltip(e) {
-            const is2d = context.is2d();
-            const mouseHandler = mouseInfoHandler({ context, handler: clickHandler, metadata, tooltip: true }).bind(this);
-            const handlerMetadata = mouseHandler(e);
-
-            if (handlerMetadata) {
-
-                const tooltipElement = getTooltipElement();
-                if (tooltipTimeout) tooltipTimeout.stop();
-                tooltipTimeout = timeout(() => {
-
-                    const path = select(this);
-
-                    if (context.showTooltip() && path && tooltipElement) {
-
-                        // get the mouse point
-                        const [x, y] = pointer(e, path);
-                        const clickPoint = { x, y };
-
-                        // set the tooltip with the relevant text
-                        let label = handlerMetadata.label || "Value";
-                        label = is2d ? handlerMetadata.subLabel || label : label;
-                        const value = handlerMetadata.value;
-
-                        if (tooltipHandler) {
-                            tooltipHandler(e, { label, value, x, y })
-                        } else {
-                            const tooltipText = `${label}: ${value}`;
-                            tooltipElement
-                                // TODO: when exceeding the document area - move the tooltip up/down or left/right
-                                // according to the position (e.g. top /right window eƒxceeded or right) 
-                                .style("left", (clickPoint.x + 10) + "px")
-                                .style("top", (clickPoint.y + 10) + "px")
-                                .text(tooltipText)
-                                .style("opacity", "1")
-                                .style("display", "flex");
-                        }
-                    }
-                }, 500);
-            }
-
-            if (e.type === "mouseover") {
-                const pathElement = select(this);
-                if (pathElement) {
-                    const clickEventExists = !!pathElement?.on('click');
-                    pathElement.transition()
-                        .duration(500)
-                        .attr("stroke-width", '4px');
-
-                    if (clickEventExists) {
-                        pathElement.style("cursor", "pointer");
-                    }
-                }
-            }
-        }
-
-        pathElement.on('mouseover', updateTooltip);
-
-        pathElement.on('mousemove', updateTooltip);
-
-        pathElement.on('mouseout', (event) => {
-            const pathElement = select(event.target);
-            if (pathElement) {
-                pathElement
-                    .transition()
-                    .duration(500)
-                    .style("cursor", "pointer")
-                    .attr("stroke-width", '0');
-            }
-
-            if (tooltipTimeout) tooltipTimeout.stop();
-            const tooltipElement = getTooltipElement();
-            if (tooltipElement) {
-                tooltipElement
-                    .style("opacity", "0")
-                    .style("display", "none")
-                    .text("");
-            }
-
-        });
-    }
-}
-
-const removeClickEvent = (pathElement) => {
-    pathElement.on('click', null);
-}
-
 /**
  * Apply the color / gradient to each path
  */
@@ -347,7 +197,7 @@ const onEachPathHandler = ({ context }) => function (d, i, nodes) {
             .attr('stroke', color);
     } else if (fillMode === 'gradient') {
         applyGradient(id, d3Path, color, i + 1, gradientDirection);
-    }   
+    }
 };
 
 const onEachPathCallbacksHandler = ({ context }) => function (d, i, nodes) {
@@ -355,7 +205,7 @@ const onEachPathCallbacksHandler = ({ context }) => function (d, i, nodes) {
     const callbacks = context.getCallBacks();
     const d3Path = select(nodes[i]);
 
-    const addMouseHandler = addMouseEventIfNotExists({ context });
+    const addMouseHandler = addMouseEventIfNotExists({ context, updateLinePositions });
     addMouseHandler(
         d3Path,
         (typeof callbacks?.click === 'function') ? callbacks.click : undefined,
@@ -416,10 +266,10 @@ const drawPaths = ({
             .transition()
             .ease(easePolyInOut)
             .delay((d, i) => i * 100)
-            .duration(1000)
+            .duration(550)
             .attr('opacity', 1)
             .each(pathHandler)
-            .on("end", function(d, i, nodes) {
+            .on("end", function (d, i, nodes) {
                 const pathElement = select(this);
                 pathElement.style("pointer-events", "all");
                 pathCallbackHandler(d, i, nodes);
@@ -432,13 +282,13 @@ const drawPaths = ({
             .transition()
             .ease(easePolyInOut)
             .delay((d, i) => i * 100)
-            .duration(1000)
+            .duration(550)
             .attr('d', d => d.path)
             .attr('data-info', getDataInfoHandler)
             .attr("stroke-width", '0')
             .attr('opacity', 1)
             .each(pathHandler)
-            .on("end", function(d, i, nodes) {
+            .on("end", function (d, i, nodes) {
                 const pathElement = select(this);
                 pathElement.style("pointer-events", "all");
                 pathCallbackHandler(d, i, nodes);
@@ -449,7 +299,7 @@ const drawPaths = ({
             .transition()
             .ease(easePolyInOut)
             .delay((d, i) => i * 100)
-            .duration(1000)
+            .duration(550)
             .attr('opacity', 0)
             .attr("stroke-width", '0')
             .each(function () {
@@ -487,7 +337,9 @@ const onEachTextHandler = ({ offset }) => {
     };
 };
 
-// Function to update line positions
+/**
+ * Update Line positions
+ */
 const updateLinePositions = ({ context }) => {
 
     const { width, height, xFactor, yFactor } = context.getDimensions({ context, margin: false })
@@ -530,7 +382,13 @@ const drawInfo = ({
         const noMarginHeight = height - margin.top - margin.bottom;
         const noMarginWidth = width - margin.left - margin.right;
         const noMarginSpacing = (!vertical ? noMarginWidth : noMarginHeight) / (info.length);
-        const calcTextPos = (i) => ((noMarginSpacing * i) + (!vertical ? margin.left : margin.top) + (noMarginSpacing / textGap))
+        const addGroupLabelHandler = addLabelMouseEventIfNotExists({ context });
+        const calcTextPos = (i) => ((noMarginSpacing * i) + (!vertical ? margin.left + margin.text.left : margin.top + margin.text.left) + (noMarginSpacing / textGap))
+        const format = context.getFormat();
+        let labelFormatCallback = value => formatNumber(value);
+        if (typeof format?.value === "function") {
+            labelFormatCallback = format.value;
+        }
 
         getInfoSvgGroup(id, margin).selectAll('g.label__group')
             .data(info)
@@ -540,8 +398,8 @@ const drawInfo = ({
                     return enter.append("g")
                         .attr("class", "label__group")
                         .each(function (d, i) {
-                            const x = !vertical ? calcTextPos(i) : margin.text;
-                            const y = !vertical ? margin.text : calcTextPos(i);
+                            const x = !vertical ? calcTextPos(i) : margin.text.left;
+                            const y = !vertical ? margin.text.top : calcTextPos(i);
 
                             const offsetValue = { value: 0 };
                             const textHandlerValue = onEachTextHandler({ offset: offsetValue });
@@ -551,7 +409,7 @@ const drawInfo = ({
                                 .attr("class", "label__value")
                                 .attr('x', x)
                                 .attr('y', y)
-                                .text(d => d.value)
+                                .text(d => labelFormatCallback(d.value))
                                 .each(textHandlerValue);
 
                             const textHandlerTitle = onEachTextHandler({ offset: offsetValue });
@@ -569,20 +427,25 @@ const drawInfo = ({
                                 .attr('y', y)
                                 .text(d => d.percentage)
                                 .each(textHandlerPercentage);
+
+                            removeClickEvent(g);
+                            addGroupLabelHandler(g);
                         })
                 },
 
                 update => update.each(function (d, i) {
 
-                    const x = !vertical ? calcTextPos(i) : margin.text;
-                    const y = !vertical ? margin.text : calcTextPos(i);
+                    const x = !vertical ? calcTextPos(i) : margin.text.left;
+                    const y = !vertical ? margin.text.top : calcTextPos(i);
 
                     const offsetValue = { value: 0 };
                     const textHandlerValue = onEachTextHandler({ offset: offsetValue });
-                    select(this).select(".label__value")
+
+                    const g = select(this);
+                    g.select(".label__value")
                         .attr('x', x)
                         .attr('y', y)
-                        .text(d => d.value)
+                        .text(d => labelFormatCallback(d.value))
                         .style('opacity', 0.5)
                         .transition()
                         .duration(400)
@@ -592,21 +455,29 @@ const drawInfo = ({
                         .each(textHandlerValue);
 
                     const textHandlerTitle = onEachTextHandler({ offset: offsetValue });
-                    select(this).select(".label__title")
+                    g.select(".label__title")
                         .attr('x', x)
                         .attr('y', y)
                         .text(d => d.label)
                         .each(textHandlerTitle);
 
                     const textHandlerPercentage = onEachTextHandler({ offset: offsetValue });
-                    select(this).select(".label__percentage")
+                    g.select(".label__percentage")
                         .attr('x', x)
                         .attr('y', y)
                         .text(d => d.percentage)
                         .each(textHandlerPercentage);
 
+                    removeClickEvent(g);
+                    addGroupLabelHandler(g);
+
                 }),
-                exit => exit.remove()
+                exit => exit
+                    .each(function () {
+                       const g = select(this);
+                       removeClickEvent(g);
+                    })
+                    .remove()
             );
 
         // display graph dividers
@@ -625,8 +496,8 @@ const drawInfo = ({
 
         // Update selection
         lines.merge(enterLines)
-            .transition()
-            .duration(500)
+            // .transition()
+            // .duration(550)
             .attr(`${!vertical ? 'x' : 'y'}1`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top))
             .attr(`${!vertical ? 'y' : 'x'}1`, 0)
             .attr(`${!vertical ? 'x' : 'y'}2`, (d, i) => noMarginSpacing * (i + 1) + (!vertical ? margin.left : margin.top))
@@ -634,8 +505,8 @@ const drawInfo = ({
 
         // Exit selection
         lines.exit()
-            .transition()
-            .duration(500)
+            // .transition()
+            // .duration(550)
             .attr('stroke-opacity', 0)
             .remove();
 
@@ -700,7 +571,8 @@ const applyGradient = (id, d3Path, colors, index, gradientDirection) => {
 
 const destroySVG = ({ context }) => () => {
 
-    const svg = getRootSvg(context.getId());
+    const id = context.getId();
+    const svg = getRootSvg(id);
 
     if (svg) {
 
@@ -709,6 +581,11 @@ const destroySVG = ({ context }) => () => {
         if (tooltipElement) {
             tooltipElement.remove();
         }
+
+        if (context.debouncedResizeHandler) {
+            context.debouncedResizeHandler.cancel();
+        }
+        select(window).on(`resize.${id}`, null);
 
         // destroy all in specific path listeners
         const paths = svg.selectAll('path');
@@ -730,4 +607,23 @@ const destroySVG = ({ context }) => () => {
     }
 }
 
-export { createRootSVG, updateRootSVG, getRootSvg, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo, destroySVG };
+const updateEvents = ({ context, events }) => {
+    // register resize handlers
+    const id = context.id;
+    const resizeEventExists = !!select(window)?.on(`resize.${id}`);
+    const resize = context.getResize();
+
+    if (resize && !resizeEventExists) {
+        const onResize = events?.['onResize'];
+        const debouncedResizeHandler = debounce(onResize, 0);
+        context.debouncedResizeHandler = debouncedResizeHandler;
+        debouncedResizeHandler();
+        select(window).on(`resize.${id}`, debouncedResizeHandler);
+    }
+
+    if (!resize && resizeEventExists) {
+        select(window).on(`resize.${id}`, null);   
+    }
+};
+
+export { createRootSVG, updateRootSVG, getRootSvg, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo, destroySVG, updateEvents };

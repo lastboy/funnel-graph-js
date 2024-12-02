@@ -11,7 +11,7 @@ import browserify from 'browserify';
 import babelify from 'babelify';
 import source from 'vinyl-source-stream';
 import streamify from 'gulp-streamify';
-import uglify from 'gulp-uglify';
+import terser from 'gulp-terser';
 
 const server = browserSync.create();
 
@@ -36,7 +36,7 @@ const scripts = () => browserify({
     .bundle()
     .pipe(source('funnel-graph.js'))
     .pipe(gulp.dest('dist/js'))
-    .pipe(streamify(uglify()))
+    .pipe(streamify(terser())) 
     .pipe(rename({ suffix: '.min' }))
     .pipe(gulp.dest('dist/js'))
     .pipe(server.stream());
@@ -55,8 +55,9 @@ const copyScss = () => {
 };
 
 const startServer = () => server.init({
+    startPath: '/examples/example.html',
     server: {
-        baseDir: './'
+        baseDir: './',
     }
 });
 

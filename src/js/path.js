@@ -84,7 +84,11 @@ const getCrossAxisPoints = ({
         totalValues.push([...totalValues].pop());
         // get points for path "A"
         points.push(totalValues.map(value => {
-            const point = roundPoint((max - value) / max * dimension);
+            if (!value) {
+                return 0;
+            }
+            const calcValue = roundPoint(Math.max((max - value), 1) / max * dimension);
+            const point = Math.min(calcValue, dimension - 1);
             return isNaN(point) ? 0 : point;
         }));
         // percentages with duplicated last value
@@ -125,7 +129,7 @@ const getCrossAxisPoints = ({
         // if the graph is simple (not two-dimensional) then we have only paths "A" and "D"
         // which are symmetric. So we get the points for "A" and then get points for "D" by subtracting "A"
         // points from graph cross dimension length
-        points.push(aggregatedValues.map(value => roundPoint((max - value) / max * dimension)));
+        points.push(aggregatedValues.map(value => roundPoint(Math.max((max - value), 1) / max * dimension)));
         points.push(points[0].map(point => fullDimension - point));
     }
 
