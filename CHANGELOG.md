@@ -1,4 +1,11 @@
 # Changelog
+
+## [1.0.13] - 2024-12-03
+
+### Fixed
+- Resolved an issue where the overridden SCSS variable was not applying correctly. (Issue: #19)
+
+
 ## [1.0.12] - 2024-12-01
 
 ### Added

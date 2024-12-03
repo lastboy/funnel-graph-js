@@ -1,5 +1,48 @@
 @import url("https://fonts.googleapis.com/css?family=Open+Sans:400,700");
 
+// fonts
+$font-main: (
+    font-family: $font-family-default,
+    font-size: 1em,
+    font-weight: normal,
+    font-line-height: 1em,
+    font-text-align: left
+);
+
+$font-tooltip: (
+    font-family: map-get($font-main, font-family),
+    font-size: map-get($font-main, font-size),
+    font-weight: map-get($font-main, font-weight),
+    font-line-height: map-get($font-main, font-line-height),
+    font-text-align: map-get($font-main, font-text-align)
+);
+
+// labels
+$font-label-title: (
+    font-family: map-get($font-main, font-family),
+    font-size: $label-title-font-size,
+    font-weight: bold,
+    font-line-height: map-get($font-main, font-line-height),
+    font-text-align: map-get($font-main, font-text-align)
+);
+
+$font-label-value: (
+    font-family: map-get($font-main, font-family),
+    font-size: $label-value-font-size,
+    font-weight: map-get($font-main, font-weight),
+    font-line-height: 18px,
+    font-text-align: map-get($font-main, font-text-align)
+);
+
+$font-label-percentage: (
+    font-family: map-get($font-main, font-family),
+    font-size: $label-per-font-size,
+    font-weight: map-get($font-main, font-weight),
+    font-line-height: map-get($font-main, font-line-height),
+    font-text-align: map-get($font-main, font-text-align)
+);
+
+// tooltip
 .d3-funnel-js-tooltip {
     pointer-events: none;
     font-size: .8em;
