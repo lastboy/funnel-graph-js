@@ -13,9 +13,23 @@
 
 <body>
     <div class="main-wrapper flex row" style="align-items: stretch; width: 100%; height: 100%; padding: 0">
+        
+        <!-- Buttons for other actions -->
+        <div class="col" id="button-container"> 
+            <!-- Dropdown for datasets -->
+            <div class="col" id="dropdown-container">
+                <select id="dataset-select" class="styled-dropdown">
+                    <option value="dataExample1">Dataset 1</option>
+                    <option value="dataExample2">Dataset 2</option>
+                    <option value="dataExample3" selected>Dataset 3</option>
+                    <option value="emptyExample">Dataset 4 (empty array [])</option>
+                    <option value="emptyZerosExample">Dataset 5 (empty zeros [0, 0...])</option>
+                    <option value="closeValuesExample">Dataset 6 (close values)</option>
+                    <option value="smallValuesExample">Dataset 7 (Small values)</option>
+                </select>
+            </div>
 
-        <!-- buttons container -->
-        <div class="col " id="button-container"></div>
+        </div>
 
         <!-- graph container -->
         <div style="width: 100%; height: 100%;">
@@ -27,7 +41,6 @@
 
     <script src="../dist/js/funnel-graph.js"></script>
     <script>
-
         const formatLargeNumber = (num, decimals = 1) => {
             if (num === 0) return "0";
 
@@ -48,15 +61,34 @@
         // Example datasets
         const datasets = {
             emptyExample: { values: [] },
-            emptyZerosExample: { values: [[0, 0, 0], [0, 0, 0], [0, 0, 0]] },
-            closeValuesExample: { values: [[900000, 10000, 1, 1], [309000, 10000, 0, 1], [2100, 550, 1, 11], [235, 2, 2, 1], [1, 0, 0, 1]] },
-            smallValuesExample: { values: [[ 42715, 41395, 41087, 41224, 41266 ], [ 42714, 41395, 41087, 41223, 41266 ], [ 42714, 41395, 41087, 41223, 41266 ], [ 42714, 41395, 41087, 41223, 41266 ]] },
-            dataExample1: { colors: ['#FFB178', '#FF3C8E'], values: [11000, 3000, 240] },
-            dataExample2: { labels: ['Impressions 2', 'Add To Cart 2', 'Buy 2'], colors: ['#FFB178', '#FF3C8E'], values: [12000, 5700, 360] },
+            emptyZerosExample: { 
+                values: [[0, 0, 0], [0, 0, 0], [0, 0, 0]] 
+            },
+            closeValuesExample: { 
+                values: [[ 21, 1, 1, 0, 63784 ], [ 21, 1, 1, 0, 0 ], [ 21, 0, 0, 0, 0 ], [ 21, 0, 0, 0, 0 ], [ 0, 0, 0, 0, 0 ], [ 0, 0, 0, 0, 0 ]],
+                colors: ["#BE3432", "#EE7137","#F4AA50","#FADC53","#D3E6F8"],
+            },
+            smallValuesExample: { 
+                values: [[ 42715, 41395, 41087, 41224, 41266 ], [ 42714, 41395, 41087, 41223, 41266 ], [ 42714, 41395, 41087, 41223, 41266 ], [ 42714, 41395, 41087, 41223, 41266 ]],
+                colors: ["#BE3432", "#EE7137", "#F4AA50", "#FADC53", "#D3E6F8"],
+            },
+            dataExample1: { 
+                colors: ['#FFB178', '#FF3C8E'],
+                values: [11000, 3000, 240] 
+            },
+            dataExample2: { 
+                labels: ['Impressions 2', 'Add To Cart 2', 'Buy 2'], 
+                colors: ['#FFB178', '#FF3C8E'],
+                values: [12000, 5700, 360] 
+            },
             dataExample3: {
                 labels: ['Impressions', 'Add To Cart', 'Buy'],
                 subLabels: ['Direct', 'Social Media', 'Ads'],
-                colors: [['#FFB178', '#FF78B1', '#FF3C8E'], ['#A0BBFF', '#EC77FF'], ['#A0F9FF', '#7795FF']],
+                colors: [
+                    ['#FFB178', '#FF78B1', '#FF3C8E'],
+                    ['#A0BBFF', '#EC77FF'],
+                    ['#A0F9FF', '#7795FF']
+                ],
                 values: [[3000, 2500, 6500], [3000, 1700, 1000], [600, 200, 130]]
             }
         };
@@ -90,16 +122,36 @@
                     console.log("label clicked", opts);
                 }
             },
-            format: {
-                value: (value) => formatLargeNumber(value),
-                tooltip: (value) => formatLargeNumber(value)
-            }
+            // example for overriding the lanels
+            // format: {
+            //     value: (opt) => {
+            //         if (opt.index === 1) {
+            //             return 1;
+            //         }
+
+            //         return formatLargeNumber(opt.value);
+            //     },
+            //     tooltip: (opt) => {
+            //         if (opt.index === 1) {
+            //             return 1;
+            //         }
+
+            //         return formatLargeNumber(opt.value);
+            //     }
+            // }
         });
 
         graph.draw();
 
         window.addEventListener('beforeunload', () => {
             graph?.destroy();
+        });
+
+        // Dropdown event listener
+        const datasetSelect = document.getElementById('dataset-select');
+        datasetSelect.addEventListener('change', (event) => {
+            const selectedDataset = event.target.value;
+            graph.updateData(datasets[selectedDataset]);
         });
 
         // Define button actions in metadata
@@ -110,19 +162,17 @@
             { id: 'gradientMakeVertical', text: 'Vertical Gradient', action: () => graph.gradientMakeVertical() },
             { id: 'gradientMakeHorizontal', text: 'Horizontal Gradient', action: () => graph.gradientMakeHorizontal() },
             { id: 'gradientToggleDirection', text: 'Gradient Toggle Direction', action: () => graph.gradientToggleDirection() },
-            { id: 'useData1', text: 'DataSet 1', action: () => graph.updateData(datasets.dataExample1) },
-            { id: 'useData2', text: 'DataSet 2', action: () => graph.updateData(datasets.dataExample2) },
-            { id: 'useData3', text: 'DataSet 3', action: () => graph.updateData(datasets.dataExample3) },
-            { id: 'useData4', text: 'DataSet 4 (empty array [])', action: () => graph.updateData(datasets.emptyExample) },
-            { id: 'useData5', text: 'DataSet 5 (empty zeros [0, 0...])', action: () => graph.updateData(datasets.emptyZerosExample) },
-            { id: 'useData6', text: 'DataSet 6 (close values)', action: () => graph.updateData(datasets.closeValuesExample) },
-            { id: 'useData7', text: 'DataSet 7 (Small values)', action: () => graph.updateData(datasets.smallValuesExample) },
             { id: 'hideTooltip', text: 'Hide Tooltip', action: () => graph.updateData({ tooltip: false }) },
             { id: 'showTooltip', text: 'Show Tooltip', action: () => graph.updateData({ tooltip: true }) },
             { id: 'hideDetails', text: 'Hide Details', action: () => graph.updateData({ width: 600, height: 400, details: false, margin: { top: 0, right: 0, bottom: 0, left: 0, text: 0 } }) },
             { id: 'showDetails', text: 'Show Details', action: () => graph.updateData({ width: 600, height: 400, details: true, margin: { top: 100, right: 80, bottom: 80, left: 80, text: 20 } }) },
             { id: 'setResize', text: 'Toggle Resize', action: () => { resize = !resize; graph.updateData({ resize }); } },
-            { id: 'setResponsive', text: 'Toggle Responsive', action: () => { responsive = !responsive; graph.updateData({ responsive }); } },
+            { id: 'setResponsive', text: 'Toggle Responsive', action: () => { 
+                    const responsiveFactor =  { factor: { width: 0.1, height: 0.4 }};
+                    responsive = !responsive; 
+                    graph.updateData({ responsive: responsive ? responsiveFactor : false }); 
+                } 
+            },
             { id: 'setResponsiveWidth', text: 'Toggle Responsive Width', action: () => { responsiveWidth = !responsiveWidth; graph.updateData({ responsiveWidth }); } },
             { id: 'setResponsiveHeight', text: 'Toggle Responsive Height', action: () => { responsiveHeight = !responsiveHeight; graph.updateData({ responsiveHeight }); } }
         ];

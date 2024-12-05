@@ -3,7 +3,7 @@
 
 module.exports = require('./src/js/main').default;
 
-},{"./src/js/main":141}],2:[function(require,module,exports){
+},{"./src/js/main":142}],2:[function(require,module,exports){
 "use strict";
 
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
@@ -5754,13 +5754,13 @@ var addMouseEventIfNotExists = exports.addMouseEventIfNotExists = function addMo
                 });
               } else {
                 var format = context.getFormat();
-                var labelFormatCallback = function labelFormatCallback(value) {
-                  return (0, _number.formatNumber)(value);
+                var labelFormatCallback = function labelFormatCallback(opt) {
+                  return (0, _number.formatNumber)(opt === null || opt === void 0 ? void 0 : opt.value);
                 };
-                if (typeof (format === null || format === void 0 ? void 0 : format.value) === "function") {
-                  labelFormatCallback = format.value;
+                if (typeof (format === null || format === void 0 ? void 0 : format.tooltip) === "function") {
+                  labelFormatCallback = format.tooltip;
                 }
-                var tooltipText = "".concat(label, ": ").concat(labelFormatCallback(value));
+                var tooltipText = "".concat(label, ": ").concat(labelFormatCallback(handlerMetadata));
                 tooltipElement
                 // TODO: when exceeding the document area - move the tooltip up/down or left/right
                 // according to the position (e.g. top /right window eƒxceeded or right) 
@@ -5877,7 +5877,7 @@ var getTooltipElement = function getTooltipElement() {
   return (0, _d3Selection.select)("#d3-funnel-js-tooltip");
 };
 
-},{"./number":142,"d3-selection":52,"d3-timer":101}],140:[function(require,module,exports){
+},{"./number":143,"d3-selection":52,"d3-timer":101}],140:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5891,6 +5891,12 @@ var _lodash = _interopRequireDefault(require("lodash.debounce"));
 var _d3Handlers = require("./d3-handlers");
 var _number = require("./number");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 /**
  * Get the main root SVG element
  */
@@ -6208,8 +6214,8 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref11) {
       return noMarginSpacing * i + (!vertical ? margin.left + margin.text.left : margin.top + margin.text.left) + noMarginSpacing / textGap;
     };
     var format = context.getFormat();
-    var labelFormatCallback = function labelFormatCallback(value) {
-      return (0, _number.formatNumber)(value);
+    var labelFormatCallback = function labelFormatCallback(opt) {
+      return (0, _number.formatNumber)(opt === null || opt === void 0 ? void 0 : opt.value);
     };
     if (typeof (format === null || format === void 0 ? void 0 : format.value) === "function") {
       labelFormatCallback = format.value;
@@ -6226,7 +6232,9 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref11) {
         });
         var g = (0, _d3Selection.select)(this);
         g.append("text").attr("class", "label__value").attr('x', x).attr('y', y).text(function (d) {
-          return labelFormatCallback(d.value);
+          return labelFormatCallback(_objectSpread(_objectSpread({}, d), {}, {
+            index: i
+          }));
         }).each(textHandlerValue);
         var textHandlerTitle = onEachTextHandler({
           offset: offsetValue
@@ -6255,7 +6263,9 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref11) {
         });
         var g = (0, _d3Selection.select)(this);
         g.select(".label__value").attr('x', x).attr('y', y).text(function (d) {
-          return labelFormatCallback(d.value);
+          return labelFormatCallback(_objectSpread(_objectSpread({}, d), {}, {
+            index: i
+          }));
         }).style('opacity', 0.5).transition().duration(400).ease(_d3Ease.easePolyInOut).style('opacity', 1).each(textHandlerValue);
         var textHandlerTitle = onEachTextHandler({
           offset: offsetValue
@@ -6394,8 +6404,9 @@ var updateEvents = exports.updateEvents = function updateEvents(_ref13) {
   var resizeEventExists = !!((_select = (0, _d3Selection.select)(window)) !== null && _select !== void 0 && _select.on("resize.".concat(id)));
   var resize = context.getResize();
   if (resize && !resizeEventExists) {
+    var wait = (resize === null || resize === void 0 ? void 0 : resize.wait) || 0;
     var onResize = events === null || events === void 0 ? void 0 : events['onResize'];
-    var debouncedResizeHandler = (0, _lodash.default)(onResize, 0);
+    var debouncedResizeHandler = (0, _lodash.default)(onResize, wait);
     context.debouncedResizeHandler = debouncedResizeHandler;
     debouncedResizeHandler();
     (0, _d3Selection.select)(window).on("resize.".concat(id), debouncedResizeHandler);
@@ -6405,7 +6416,71 @@ var updateEvents = exports.updateEvents = function updateEvents(_ref13) {
   }
 };
 
-},{"./d3-handlers":139,"./number":142,"d3-ease":16,"d3-selection":52,"d3-transition":106,"lodash.debounce":134}],141:[function(require,module,exports){
+},{"./d3-handlers":139,"./number":143,"d3-ease":16,"d3-selection":52,"d3-transition":106,"lodash.debounce":134}],141:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.getLogger = void 0;
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+/**
+ *  A basic logger wrapper for the browser's console
+ *  
+ *  Usage example: 
+ *      const logger = getLogger({ module: "Utils" });
+ *      logger.warn("")
+ * 
+ * 
+ *  // TODO: filter the debug calls on dev env
+ */
+var getLogger = exports.getLogger = function getLogger(_ref) {
+  var module = _ref.module;
+  var projectName = "[Funnel Graph JS]";
+  var _style = "background: #007acc; color: white; padding: 2px 4px; border-radius: 3px";
+  var getColorStyle = function getColorStyle(method) {
+    switch (method) {
+      case "warn":
+        return "color: orange;";
+      case "error":
+        return "color: red;";
+      case "debug":
+        return "color: green;";
+    }
+    return "color: #000000;";
+  };
+  var _prefix = "".concat(projectName, " ").concat(module || "");
+  var _formatMessage = function _formatMessage(message) {
+    return "%c".concat(_prefix, "%c %c").concat(message);
+  };
+  var _wrapConsoleMethod = function _wrapConsoleMethod(method) {
+    return function () {
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+      return console[method].apply(console, [_formatMessage(args[0]), _style, "", getColorStyle(method)].concat(_toConsumableArray(args.slice(1))));
+    };
+  };
+  var log = _wrapConsoleMethod("log");
+  var info = _wrapConsoleMethod("info");
+  var warn = _wrapConsoleMethod("warn");
+  var error = _wrapConsoleMethod("error");
+  var debug = _wrapConsoleMethod("debug");
+  return {
+    log: log,
+    info: info,
+    warn: warn,
+    error: error,
+    debug: debug
+  };
+};
+
+},{}],142:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6418,6 +6493,7 @@ var _path = require("./path");
 var _d = require("./d3");
 var _nanoid = require("nanoid");
 var _utils = require("./utils");
+var _logger = require("./logger");
 function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
@@ -6435,6 +6511,10 @@ function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = 
 function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); } /* eslint-disable no-trailing-spaces */ /* global HTMLElement */
+var logger = (0, _logger.getLogger)({
+  module: "Main"
+});
+
 /**
  * Funnel graph class
  * 
@@ -6457,11 +6537,20 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
  * 
  *      -- callbacks definitions 
  *      callbacks: {
- *          -- click on funnel areas
+ *          -- funnel area handler
  *          'click': ({ index, value, label, subLabel, sectionIndex }) => {},
- *          -- override for the OOTB tooltip - funnel areas
- *          'tooltip': (event, { label, value }) => {}
+ *          -- override for the OOTB tooltip (funnel areas)
+ *          'tooltip': (event, { label, value }) => {},
+ *          -- top label handler
+ *          label: (event, { index, value, label, subLabel, sectionIndex }) => {}
  *      },
+ * 
+ *      format: {
+ *          -- format the label values
+            value: ({ value }) => {}`
+ *          -- format the tooltip values
+            tooltip: `(opts) => {}`
+ *      }
  * 
  *      -- display the OOTB tooltip - on / off
  *      tooltip: true,
@@ -6470,7 +6559,13 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
  *      details: false,
  * 
  *      -- resize the SVG using handler 
- *      resize: true,
+ *      resize: {
+ *          factor: {
+ *              width: 0.1
+ *              height: 0.5,
+ *              debounce: 0
+ *          }
+ *      },
  * 
  *      -- responsive SVG using 100% for the width / height
  *      responsive: false,
@@ -6528,6 +6623,7 @@ var FunnelGraph = /*#__PURE__*/function () {
      * Main use for the tooltip sections over the paths 
      */
     this.linePositions = [];
+    logger.info("Initialized");
   }
   return _createClass(FunnelGraph, [{
     key: "destroy",
@@ -6758,11 +6854,25 @@ var FunnelGraph = /*#__PURE__*/function () {
   }, {
     key: "getResize",
     value: function getResize() {
+      var _this$resize;
+      if (this.resize && _typeof((_this$resize = this.resize) === null || _this$resize === void 0 ? void 0 : _this$resize.factor) !== "object") {
+        logger.warn("Resize is disabled, no valid configuration was found. see the docs for more information");
+        this.resize = undefined;
+      }
       return this.resize;
     }
   }, {
     key: "setResize",
     value: function setResize(resize) {
+      var resizeDefaultFactors = {
+        factor: {
+          width: 0.4,
+          height: 0.4
+        }
+      };
+      if (resize && typeof resize === "boolean") {
+        resize = resizeDefaultFactors;
+      }
       this.resize = resize;
     }
   }, {
@@ -7016,12 +7126,18 @@ var FunnelGraph = /*#__PURE__*/function () {
   }, {
     key: "onResize",
     value: function onResize() {
+      var _context$getResize;
       var context = this;
       var container = (0, _d.getContainer)(context.containerSelector);
+      var resizeFactors = (_context$getResize = context.getResize()) === null || _context$getResize === void 0 ? void 0 : _context$getResize.factor;
       if (container) {
         var containerNode = container.node();
-        var newWidth = +containerNode.clientWidth - 200;
-        var newHeight = +containerNode.clientHeight - 200;
+        var width = context.getWidth();
+        var height = context.getHeight();
+        var adjustmentWidthFactor = resizeFactors.width || 0.1;
+        var adjustmentHeightFactor = (resizeFactors === null || resizeFactors === void 0 ? void 0 : resizeFactors.height) || 0.5;
+        var newWidth = +containerNode.clientWidth - width * adjustmentWidthFactor;
+        var newHeight = +containerNode.clientHeight - height * adjustmentHeightFactor;
         var aspectRatio = 1 / 1;
         newWidth = newWidth * aspectRatio;
         newHeight = newHeight * aspectRatio;
@@ -7149,7 +7265,7 @@ var FunnelGraph = /*#__PURE__*/function () {
 }();
 var _default = exports.default = FunnelGraph;
 
-},{"./colors":138,"./d3":140,"./number":142,"./path":143,"./utils":144,"nanoid":135}],142:[function(require,module,exports){
+},{"./colors":138,"./d3":140,"./logger":141,"./number":143,"./path":144,"./utils":145,"nanoid":135}],143:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7163,7 +7279,7 @@ var formatNumber = exports.formatNumber = function formatNumber(number) {
   return Number(number).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
 };
 
-},{}],143:[function(require,module,exports){
+},{}],144:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7261,16 +7377,22 @@ var getCrossAxisPoints = exports.getCrossAxisPoints = function getCrossAxisPoint
     var max = Math.max.apply(Math, _toConsumableArray(totalValues));
 
     // duplicate last value
+    var allZ = totalValues.every(function (value) {
+      return value === 0;
+    });
     totalValues.push(_toConsumableArray(totalValues).pop());
-    // get points for path "A"
-    points.push(totalValues.map(function (value) {
-      if (!value) {
+    var minThickness = (max > 0 ? dimension * 0.005 : 0) + (max > 0 ? dimension / max * 0.1 : 0);
+    points.push(totalValues.map(function (value, index) {
+      if (!value && allZ) {
         return 0;
       }
-      var calcValue = (0, _number.roundPoint)(Math.max(max - value, 1) / max * dimension);
-      var point = Math.min(calcValue, dimension - 1);
+      var calcValue = (max - value) / max * dimension;
+      // Ensure minimum size for very small values
+      var minimumThreshold = Math.max(dimension * 0.01, dimension / max * 0.1);
+      var point = (0, _number.roundPoint)(Math.max(calcValue, minThickness)) - (value ? minimumThreshold / 2 : 0);
       return isNaN(point) ? 0 : point;
     }));
+
     // percentages with duplicated last value
     var percentagesFull = percentages2d;
     var pointsOfFirstPath = points[0];
@@ -7313,7 +7435,7 @@ var getCrossAxisPoints = exports.getCrossAxisPoints = function getCrossAxisPoint
     // which are symmetric. So we get the points for "A" and then get points for "D" by subtracting "A"
     // points from graph cross dimension length
     points.push(aggregatedValues.map(function (value) {
-      return (0, _number.roundPoint)(Math.max(_max - value, 1) / _max * dimension);
+      return (0, _number.roundPoint)((_max - value) / _max * dimension);
     }));
     points.push(points[0].map(function (point) {
       return fullDimension - point;
@@ -7421,13 +7543,17 @@ var createVerticalPath = function createVerticalPath(index, X, XNext, Y) {
   return str;
 };
 
-},{"./number":142}],144:[function(require,module,exports){
+},{"./number":143}],145:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.normalizeArray = void 0;
+var _logger = require("./logger");
+var logger = (0, _logger.getLogger)({
+  module: "Utils"
+});
 var _normalizeArray2 = function _normalizeArray(arr) {
   // Helper function to check if a single cell is considered empty
   var isEmpty = function isEmpty(el) {
@@ -7443,10 +7569,10 @@ var normalizeArray = exports.normalizeArray = function normalizeArray(arr) {
   try {
     nArray = _normalizeArray2(arr) ? [] : arr;
   } catch (e) {
-    console.warn("normalizing array function failed with errors: ", e);
+    logger.warn("normalizing array function failed with errors: ", e);
   }
   return nArray;
 };
 
-},{}]},{},[1])(1)
+},{"./logger":141}]},{},[1])(1)
 });

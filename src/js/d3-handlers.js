@@ -52,12 +52,12 @@ export const addMouseEventIfNotExists = ({ context, updateLinePositions }) => (p
                         } else {
 
                             const format = context.getFormat();
-                            let labelFormatCallback = value => formatNumber(value);
-                            if (typeof format?.value === "function") {
-                                labelFormatCallback = format.value;
+                            let labelFormatCallback = opt => formatNumber(opt?.value);
+                            if (typeof format?.tooltip === "function") {
+                                labelFormatCallback = format.tooltip;
                             }
 
-                            const tooltipText = `${label}: ${labelFormatCallback(value)}`;
+                            const tooltipText = `${label}: ${labelFormatCallback(handlerMetadata)}`;
                             tooltipElement
                                 // TODO: when exceeding the document area - move the tooltip up/down or left/right
                                 // according to the position (e.g. top /right window eƒxceeded or right) 

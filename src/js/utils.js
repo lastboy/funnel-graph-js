@@ -1,3 +1,7 @@
+import { getLogger } from "./logger";
+
+const logger = getLogger({ module: "Utils"});
+
 const _normalizeArray = (arr) => {
     // Helper function to check if a single cell is considered empty
     const isEmpty = el => Array.isArray(el) ? _normalizeArray(el) : el === null || el === undefined;
@@ -12,7 +16,7 @@ export const normalizeArray = (arr) => {
     try {
         nArray = _normalizeArray(arr) ? [] : arr;
     } catch(e) {
-        console.warn("normalizing array function failed with errors: ", e)
+        logger.warn("normalizing array function failed with errors: ", e)
     }
 
     return nArray;

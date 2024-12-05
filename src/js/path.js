@@ -81,16 +81,23 @@ const getCrossAxisPoints = ({
         const max = Math.max(...totalValues);
 
         // duplicate last value
+        const allZ = totalValues.every(value => value === 0);
         totalValues.push([...totalValues].pop());
-        // get points for path "A"
-        points.push(totalValues.map(value => {
-            if (!value) {
+        const minThickness = (max > 0 ? dimension * 0.005 : 0) + (max > 0 ? (dimension / max) * 0.1 : 0);
+
+        
+        points.push(totalValues.map( (value, index) => {
+            if (!value && allZ) {
                 return 0;
             }
-            const calcValue = roundPoint(Math.max((max - value), 1) / max * dimension);
-            const point = Math.min(calcValue, dimension - 1);
+
+            const calcValue = (max - value) / max * dimension;
+            // Ensure minimum size for very small values
+            const minimumThreshold = Math.max(dimension * 0.01, dimension / max * 0.1);
+            const point = roundPoint(Math.max(calcValue, minThickness)) - (value ? minimumThreshold / 2 : 0);
             return isNaN(point) ? 0 : point;
         }));
+        
         // percentages with duplicated last value
         const percentagesFull = percentages2d;
         let pointsOfFirstPath = points[0];
@@ -129,7 +136,7 @@ const getCrossAxisPoints = ({
         // if the graph is simple (not two-dimensional) then we have only paths "A" and "D"
         // which are symmetric. So we get the points for "A" and then get points for "D" by subtracting "A"
         // points from graph cross dimension length
-        points.push(aggregatedValues.map(value => roundPoint(Math.max((max - value), 1) / max * dimension)));
+        points.push(aggregatedValues.map(value => roundPoint((max - value) / max * dimension)));
         points.push(points[0].map(point => fullDimension - point));
     }
 
