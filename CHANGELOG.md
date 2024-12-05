@@ -1,15 +1,37 @@
 # Changelog
 
+## [1.1.0] - 2024-12-05
+
+## Added 
+- There is a simple "responsive" flag to enable responsive behavior by assigning 100% width/height to the SVG root element.  
+This new resize functionality recreates the path dynamically and improving the accuracy of the graph visualization.
+
+- Label and Tooltip Formatting  
+Added support for handlers to customize the formatting of labels and tooltip displays.
+
+- Label Click Handler  
+Introduced support for adding click handlers to the label area
+
+## Fixed
+- Resolved issue: #17 which had been reopened due to unresolved problems.
+- Fixed an issue where small values were not being rendered with a line.
+
+
 ## [1.0.14] - 2024-12-03
 
 ### Fixed
 - Rebuild dist
 
+### Known Regressions
+- This version may introduce instability in certain edge cases, specifically around the path creation.
 
 ## [1.0.13] - 2024-12-03
 
 ### Fixed
 - Resolved an issue where the overridden SCSS variable was not applying correctly. (Issue: #19)
+
+### Known Regressions
+- This version may introduce instability in certain edge cases, specifically around the path creation.
 
 
 ## [1.0.12] - 2024-12-01

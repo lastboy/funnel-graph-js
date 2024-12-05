@@ -6,6 +6,9 @@ import { getCrossAxisPoints, getPathDefinitions } from './path'
 import { createRootSVG, updateRootSVG, getContainer, drawPaths, gradientMakeVertical, gradientMakeHorizontal, drawInfo, destroySVG, getRootSvg, updateEvents } from './d3'
 import { nanoid } from 'nanoid';
 import { normalizeArray } from "./utils"
+import { getLogger } from './logger';
+
+const logger = getLogger({ module: "Main" });
 
 /**
  * Funnel graph class
@@ -29,11 +32,20 @@ import { normalizeArray } from "./utils"
  * 
  *      -- callbacks definitions 
  *      callbacks: {
- *          -- click on funnel areas
+ *          -- funnel area handler
  *          'click': ({ index, value, label, subLabel, sectionIndex }) => {},
- *          -- override for the OOTB tooltip - funnel areas
- *          'tooltip': (event, { label, value }) => {}
+ *          -- override for the OOTB tooltip (funnel areas)
+ *          'tooltip': (event, { label, value }) => {},
+ *          -- top label handler
+ *          label: (event, { index, value, label, subLabel, sectionIndex }) => {}
  *      },
+ * 
+ *      format: {
+ *          -- format the label values
+            value: ({ value }) => {}`
+ *          -- format the tooltip values
+            tooltip: `(opts) => {}`
+ *      }
  * 
  *      -- display the OOTB tooltip - on / off
  *      tooltip: true,
@@ -42,7 +54,13 @@ import { normalizeArray } from "./utils"
  *      details: false,
  * 
  *      -- resize the SVG using handler 
- *      resize: true,
+ *      resize: {
+ *          factor: {
+ *              width: 0.1
+ *              height: 0.5,
+ *              debounce: 0
+ *          }
+ *      },
  * 
  *      -- responsive SVG using 100% for the width / height
  *      responsive: false,
@@ -103,6 +121,8 @@ class FunnelGraph {
          * Main use for the tooltip sections over the paths 
          */
         this.linePositions = [];
+
+        logger.info("Initialized");
     }
 
     destroy() {
@@ -283,10 +303,18 @@ class FunnelGraph {
     }
 
     getResize() {
+        if (this.resize && (typeof this.resize?.factor !== "object")) {
+            logger.warn("Resize is disabled, no valid configuration was found. see the docs for more information");
+            this.resize = undefined;
+        }
         return this.resize;
     }
 
     setResize(resize) {
+        const resizeDefaultFactors = { factor: { width: 0.4, height: 0.4 } };
+        if (resize && typeof resize === "boolean") {
+            resize = resizeDefaultFactors;
+        } 
         this.resize = resize;
     }
 
@@ -296,7 +324,6 @@ class FunnelGraph {
 
     setHeight(h) {
         this.height = h;
-
     }
 
     setWidth(w) {
@@ -349,13 +376,11 @@ class FunnelGraph {
     }
 
     setLabels(labels) {
-
         labels = normalizeArray(labels)
         this.labels = labels;
     }
 
     setValues(values) {
-
         values = normalizeArray(values)
         this.values = values;
     }
@@ -518,14 +543,20 @@ class FunnelGraph {
 
     onResize() {
         const context = this;
-        const container = getContainer(context.containerSelector)
+        const container = getContainer(context.containerSelector);
+        const resizeFactors = context.getResize()?.factor;
     
         if (container) {
     
             const containerNode = container.node();
     
-            let newWidth = +containerNode.clientWidth - 200;
-            let newHeight = +containerNode.clientHeight - 200;
+            const width = context.getWidth()
+            const height = context.getHeight()
+            
+            const adjustmentWidthFactor = resizeFactors.width || 0.1;
+            const adjustmentHeightFactor = resizeFactors?.height || 0.5;
+            let newWidth = +containerNode.clientWidth - (width * adjustmentWidthFactor);
+            let newHeight = +containerNode.clientHeight - (height * adjustmentHeightFactor);
 
             const aspectRatio = 1 / 1
             

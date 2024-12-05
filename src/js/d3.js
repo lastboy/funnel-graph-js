@@ -385,7 +385,7 @@ const drawInfo = ({
         const addGroupLabelHandler = addLabelMouseEventIfNotExists({ context });
         const calcTextPos = (i) => ((noMarginSpacing * i) + (!vertical ? margin.left + margin.text.left : margin.top + margin.text.left) + (noMarginSpacing / textGap))
         const format = context.getFormat();
-        let labelFormatCallback = value => formatNumber(value);
+        let labelFormatCallback = opt => formatNumber(opt?.value);
         if (typeof format?.value === "function") {
             labelFormatCallback = format.value;
         }
@@ -409,7 +409,7 @@ const drawInfo = ({
                                 .attr("class", "label__value")
                                 .attr('x', x)
                                 .attr('y', y)
-                                .text(d => labelFormatCallback(d.value))
+                                .text(d => labelFormatCallback({ ...d, index: i }))
                                 .each(textHandlerValue);
 
                             const textHandlerTitle = onEachTextHandler({ offset: offsetValue });
@@ -445,7 +445,7 @@ const drawInfo = ({
                     g.select(".label__value")
                         .attr('x', x)
                         .attr('y', y)
-                        .text(d => labelFormatCallback(d.value))
+                        .text(d => labelFormatCallback({ ...d, index: i }))
                         .style('opacity', 0.5)
                         .transition()
                         .duration(400)
@@ -614,8 +614,9 @@ const updateEvents = ({ context, events }) => {
     const resize = context.getResize();
 
     if (resize && !resizeEventExists) {
+        const wait = resize?.wait || 0;
         const onResize = events?.['onResize'];
-        const debouncedResizeHandler = debounce(onResize, 0);
+        const debouncedResizeHandler = debounce(onResize, wait);
         context.debouncedResizeHandler = debouncedResizeHandler;
         debouncedResizeHandler();
         select(window).on(`resize.${id}`, debouncedResizeHandler);
