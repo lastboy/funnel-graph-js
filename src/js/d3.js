@@ -429,7 +429,7 @@ const drawInfo = ({
                                 .each(textHandlerPercentage);
 
                             removeClickEvent(g);
-                            addGroupLabelHandler(g);
+                            addGroupLabelHandler(g, i);
                         })
                 },
 
@@ -469,7 +469,7 @@ const drawInfo = ({
                         .each(textHandlerPercentage);
 
                     removeClickEvent(g);
-                    addGroupLabelHandler(g);
+                    addGroupLabelHandler(g, i);
 
                 }),
                 exit => exit
@@ -576,16 +576,15 @@ const destroySVG = ({ context }) => () => {
 
     if (svg) {
 
+        context.clearDebounce();
+
+        select(window).on(`resize.${id}`, null);
+
         // destroy tooltip
         const tooltipElement = select("#d3-funnel-js-tooltip");
         if (tooltipElement) {
             tooltipElement.remove();
         }
-
-        if (context.debouncedResizeHandler) {
-            context.debouncedResizeHandler.cancel();
-        }
-        select(window).on(`resize.${id}`, null);
 
         // destroy all in specific path listeners
         const paths = svg.selectAll('path');
@@ -609,7 +608,11 @@ const destroySVG = ({ context }) => () => {
 
 const updateEvents = ({ context, events }) => {
     // register resize handlers
-    const id = context.id;
+    const id = context.getId();
+    if (!id) {
+        return;
+    }
+
     const resizeEventExists = !!select(window)?.on(`resize.${id}`);
     const resize = context.getResize();
 
@@ -617,7 +620,8 @@ const updateEvents = ({ context, events }) => {
         const wait = resize?.wait || 0;
         const onResize = events?.['onResize'];
         const debouncedResizeHandler = debounce(onResize, wait);
-        context.debouncedResizeHandler = debouncedResizeHandler;
+        context.setDebouncedResizeHandler(debouncedResizeHandler);
+
         debouncedResizeHandler();
         select(window).on(`resize.${id}`, debouncedResizeHandler);
     }

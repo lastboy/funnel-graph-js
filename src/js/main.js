@@ -310,6 +310,17 @@ class FunnelGraph {
         return this.resize;
     }
 
+    getDebouncedResizeHandler() {
+        return this.debouncedResizeHandler;
+    };
+
+    clearDebounce() {
+        if (this.debouncedResizeHandler) {
+            this.debouncedResizeHandler?.cancel();
+            this.debouncedResizeHandler = null;
+        }
+    }
+
     setResize(resize) {
         const resizeDefaultFactors = { factor: { width: 0.4, height: 0.4 } };
         if (resize && typeof resize === "boolean") {
@@ -384,6 +395,10 @@ class FunnelGraph {
         values = normalizeArray(values)
         this.values = values;
     }
+
+    setDebouncedResizeHandler(handler) {
+        this.debouncedResizeHandler = handler;
+    };
 
     createPercentages() {
         let values = [];
@@ -549,9 +564,8 @@ class FunnelGraph {
         if (container) {
     
             const containerNode = container.node();
-    
-            const width = context.getWidth()
-            const height = context.getHeight()
+            const width = context.getWidth();
+            const height = context.getHeight();
             
             const adjustmentWidthFactor = resizeFactors.width || 0.1;
             const adjustmentHeightFactor = resizeFactors?.height || 0.5;

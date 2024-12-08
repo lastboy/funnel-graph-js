@@ -167,12 +167,12 @@ export const mouseInfoHandler = ({ context, clickHandler, metadata, tooltip, upd
 /**
  * Add label hander if mot exists 
  */
-export const addLabelMouseEventIfNotExists = ({ context }) => (groupLabels) => {
+export const addLabelMouseEventIfNotExists = ({ context }) => (groupLabels, index) => {
     const callbacks = context.getCallBacks();
     const clickLabelHandler = (typeof callbacks?.label === "function");
     const groupLabelsExists = !!groupLabels?.on('click');
     if (!groupLabelsExists && clickLabelHandler) {
-        groupLabels.on("click", callbacks.label);
+        groupLabels.on("click", (event, d) => callbacks.label(event, { ...d, index}));
         groupLabels.style("cursor", "pointer")
     }
 }

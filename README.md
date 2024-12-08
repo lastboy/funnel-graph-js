@@ -42,9 +42,9 @@ The funnel graph is created as a single SVG unit, without combining any HTML ele
 [![Demo](https://i.imgur.com/mmb1xCr.gif)](https://codepen.io/arik-test/pen/qBGYjyG)
 
 ## Support for Vue, React, and Other Frameworks
-* [Vue2 example](https://codepen.io/arik-test/pen/PwYZJVy){:target="_blank"}
-* [Vue3 example](https://codepen.io/arik-test/pen/vEBLpNB){:target="_blank"}
-* [React example](https://codepen.io/arik-test/pen/OPLMOzK){:target="_blank"}
+* [Vue2 example](https://codepen.io/arik-test/pen/PwYZJVy)
+* [Vue3 example](https://codepen.io/arik-test/pen/vEBLpNB)
+* [React example](https://codepen.io/arik-test/pen/OPLMOzK)
 
 
 ## Build
@@ -83,12 +83,29 @@ var graph = new FunnelGraph({
     direction: 'horizontal',
     width: 800,
     height: 300,
+    margin: { 
+      top: 120, 
+      right: 60, 
+      bottom: 60, 
+      left: 60, 
+      text: { left: 10, top: 0 } 
+    },
     callbacks: {
-        click: (event, metadata) => {
-            console.log(metadata);
+        click: (event, opts) => {
+            // path click by a section
+        },
+        label: (event, opts) => {
+            // top label click
         }
     },
-    margin: { top: 120, right: 60, bottom: 60, left: 60, text: { left: 10, top: 0 } }
+    format: {
+        value: (opt) => { 
+          // format the top label value
+        },
+        tooltip: (opt) => {
+          // format the tooltip value
+        }
+    }
 });
 
 graph.draw();

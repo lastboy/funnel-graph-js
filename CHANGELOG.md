@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1] - 2024-12-08
+
+## Fixed
+- Resize Handler Bug:
+Fixed an issue where the resize handler was not properly destroyed, causing it to persist in the DOM after being disabled or when staying on the same page. (Issue #24)
+
+- Click Label Handler Bug:
+Fixed missing path section index in the click label handler, enabling proper mapping of interactions to graph section (Issue #25)
+
 ## [1.1.0] - 2024-12-05
 
 ## Added 

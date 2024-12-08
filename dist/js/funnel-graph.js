@@ -5860,12 +5860,16 @@ var mouseInfoHandler = exports.mouseInfoHandler = function mouseInfoHandler(_ref
  */
 var addLabelMouseEventIfNotExists = exports.addLabelMouseEventIfNotExists = function addLabelMouseEventIfNotExists(_ref3) {
   var context = _ref3.context;
-  return function (groupLabels) {
+  return function (groupLabels, index) {
     var callbacks = context.getCallBacks();
     var clickLabelHandler = typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.label) === "function";
     var groupLabelsExists = !!(groupLabels !== null && groupLabels !== void 0 && groupLabels.on('click'));
     if (!groupLabelsExists && clickLabelHandler) {
-      groupLabels.on("click", callbacks.label);
+      groupLabels.on("click", function (event, d) {
+        return callbacks.label(event, _objectSpread(_objectSpread({}, d), {}, {
+          index: index
+        }));
+      });
       groupLabels.style("cursor", "pointer");
     }
   };
@@ -6249,7 +6253,7 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref11) {
           return d.percentage;
         }).each(textHandlerPercentage);
         (0, _d3Handlers.removeClickEvent)(g);
-        addGroupLabelHandler(g);
+        addGroupLabelHandler(g, i);
       });
     }, function (update) {
       return update.each(function (d, i) {
@@ -6280,7 +6284,7 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref11) {
           return d.percentage;
         }).each(textHandlerPercentage);
         (0, _d3Handlers.removeClickEvent)(g);
-        addGroupLabelHandler(g);
+        addGroupLabelHandler(g, i);
       });
     }, function (exit) {
       return exit.each(function () {
@@ -6365,15 +6369,14 @@ var destroySVG = exports.destroySVG = function destroySVG(_ref12) {
     var id = context.getId();
     var svg = getRootSvg(id);
     if (svg) {
+      context.clearDebounce();
+      (0, _d3Selection.select)(window).on("resize.".concat(id), null);
+
       // destroy tooltip
       var tooltipElement = (0, _d3Selection.select)("#d3-funnel-js-tooltip");
       if (tooltipElement) {
         tooltipElement.remove();
       }
-      if (context.debouncedResizeHandler) {
-        context.debouncedResizeHandler.cancel();
-      }
-      (0, _d3Selection.select)(window).on("resize.".concat(id), null);
 
       // destroy all in specific path listeners
       var paths = svg.selectAll('path');
@@ -6400,14 +6403,17 @@ var updateEvents = exports.updateEvents = function updateEvents(_ref13) {
   var context = _ref13.context,
     events = _ref13.events;
   // register resize handlers
-  var id = context.id;
+  var id = context.getId();
+  if (!id) {
+    return;
+  }
   var resizeEventExists = !!((_select = (0, _d3Selection.select)(window)) !== null && _select !== void 0 && _select.on("resize.".concat(id)));
   var resize = context.getResize();
   if (resize && !resizeEventExists) {
     var wait = (resize === null || resize === void 0 ? void 0 : resize.wait) || 0;
     var onResize = events === null || events === void 0 ? void 0 : events['onResize'];
     var debouncedResizeHandler = (0, _lodash.default)(onResize, wait);
-    context.debouncedResizeHandler = debouncedResizeHandler;
+    context.setDebouncedResizeHandler(debouncedResizeHandler);
     debouncedResizeHandler();
     (0, _d3Selection.select)(window).on("resize.".concat(id), debouncedResizeHandler);
   }
@@ -6862,6 +6868,20 @@ var FunnelGraph = /*#__PURE__*/function () {
       return this.resize;
     }
   }, {
+    key: "getDebouncedResizeHandler",
+    value: function getDebouncedResizeHandler() {
+      return this.debouncedResizeHandler;
+    }
+  }, {
+    key: "clearDebounce",
+    value: function clearDebounce() {
+      if (this.debouncedResizeHandler) {
+        var _this$debouncedResize;
+        (_this$debouncedResize = this.debouncedResizeHandler) === null || _this$debouncedResize === void 0 || _this$debouncedResize.cancel();
+        this.debouncedResizeHandler = null;
+      }
+    }
+  }, {
     key: "setResize",
     value: function setResize(resize) {
       var resizeDefaultFactors = {
@@ -6950,6 +6970,11 @@ var FunnelGraph = /*#__PURE__*/function () {
     value: function setValues(values) {
       values = (0, _utils.normalizeArray)(values);
       this.values = values;
+    }
+  }, {
+    key: "setDebouncedResizeHandler",
+    value: function setDebouncedResizeHandler(handler) {
+      this.debouncedResizeHandler = handler;
     }
   }, {
     key: "createPercentages",
