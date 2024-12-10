@@ -1,6 +1,6 @@
 {
   "name": "d3-funnel-graph",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "SVG Funnel Graph Javascript Library",
   "main": "dist/js/funnel-graph.min.js",
   "style": "dist/funnel-graph.min.css",
@@ -19,10 +19,10 @@
     "url": "https://github.com/lastboy/funnel-graph-js.git"
   },
   "bugs": {
-    "url": "https://github.com/lastboy/funnel-graph-js.git/issues"
+    "url": "https://github.com/lastboy/funnel-graph-js/issues"
   },
-  "homepage": "https://github.com/lastboy/funnel-graph-js.git#readme",
-  "changelog": "https://github.com/lastboy/funnel-graph-js.git/releases",
+  "homepage": "https://github.com/lastboy/funnel-graph-js/#readme",
+  "changelog": "https://github.com/lastboy/funnel-graph-js/blob/master/CHANGELOG.md",
   "keywords": [
     "d3",
     "funnel",

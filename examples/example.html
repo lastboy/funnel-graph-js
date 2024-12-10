@@ -120,22 +120,17 @@
                 label: (event, opts) => {
                     // label handler logic
                     console.log("label clicked", opts);
-                }
+                },
+                // tooltipLabel: (event, opts) => {
+                //     console.log(opts)
+                // }
             },
             // example for overriding the lanels
             // format: {
             //     value: (opt) => {
-            //         if (opt.index === 1) {
-            //             return 1;
-            //         }
-
             //         return formatLargeNumber(opt.value);
             //     },
             //     tooltip: (opt) => {
-            //         if (opt.index === 1) {
-            //             return 1;
-            //         }
-
             //         return formatLargeNumber(opt.value);
             //     }
             // }
@@ -164,6 +159,8 @@
             { id: 'gradientToggleDirection', text: 'Gradient Toggle Direction', action: () => graph.gradientToggleDirection() },
             { id: 'hideTooltip', text: 'Hide Tooltip', action: () => graph.updateData({ tooltip: false }) },
             { id: 'showTooltip', text: 'Show Tooltip', action: () => graph.updateData({ tooltip: true }) },
+            { id: 'hideTooltipLabel', text: 'Hide Tooltip Lbl', action: () => graph.updateData({ tooltipLabel: false }) },
+            { id: 'showTooltipLabel', text: 'Show Tooltip Lbl', action: () => graph.updateData({ tooltipLabel: true }) },
             { id: 'hideDetails', text: 'Hide Details', action: () => graph.updateData({ width: 600, height: 400, details: false, margin: { top: 0, right: 0, bottom: 0, left: 0, text: 0 } }) },
             { id: 'showDetails', text: 'Show Details', action: () => graph.updateData({ width: 600, height: 400, details: true, margin: { top: 100, right: 80, bottom: 80, left: 80, text: 20 } }) },
             { id: 'setResize', text: 'Toggle Resize', action: () => { resize = !resize; graph.updateData({ resize }); } },

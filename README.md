@@ -158,6 +158,11 @@ graph.draw();
 
   - **tooltip**  
     Callback function for tooltip events, overriding the default implementation.  
+    `(event, { label, value, x, y }) => {}`
+
+  - **tooltipLabel**  
+    Callback function for tooltip events, overriding the default implementation.  
+    `(event, { label, value, x, y, sectionDetails }) => {}`
 
     - **Signature**:  
       `(event, { label, value }) => {}`
@@ -190,7 +195,10 @@ graph.draw();
   Whether details should be displayed (`true | false`).
 
 - **tooltip**  
-  Whether the tooltip should be displayed (`true | false`).  
+  Whether the tooltip should be displayed (`(default) true | false`).  
+
+- **tooltipLabel**  
+  Whether the tooltip label should be displayed (`true | false (default)`).  
 
   **Note:** Tooltip display depends on the details display for range calculations according to the dividers.
 

@@ -203,13 +203,27 @@ const onEachPathHandler = ({ context }) => function (d, i, nodes) {
 const onEachPathCallbacksHandler = ({ context }) => function (d, i, nodes) {
 
     const callbacks = context.getCallBacks();
-    const d3Path = select(nodes[i]);
+    const d3Element = select(nodes[i]);
 
     const addMouseHandler = addMouseEventIfNotExists({ context, updateLinePositions });
     addMouseHandler(
-        d3Path,
+        d3Element,
         (typeof callbacks?.click === 'function') ? callbacks.click : undefined,
         (typeof callbacks?.tooltip === 'function') ? callbacks.tooltip : undefined,
+        { index: i }
+    );
+};
+
+const onEachGroupLabelsCallbacksHandler = ({ context }) => function (d, i, nodes) {
+
+    const callbacks = context.getCallBacks();
+    const d3Element = select(nodes[i]);
+
+    const addMouseHandler = addMouseEventIfNotExists({ context, updateLinePositions });
+    addMouseHandler(
+        d3Element,
+        null,
+        (typeof callbacks?.tooltipLabel === 'function') ? callbacks.tooltipLabel : undefined,
         { index: i }
     );
 };
@@ -229,7 +243,29 @@ const getDataInfo = ({ context }) => (d, i) => {
     const infoItemLabels = data.labels || [];
     const infoItemSubLabels = data?.subLabels || [];
 
-    return `{ "values": ${JSON.stringify(infoItemValues)}, "labels": ${JSON.stringify(infoItemLabels)}, "subLabels": ${JSON.stringify(infoItemSubLabels)} }`;
+    return `{ "mouseOnTooltip": true, "values": ${JSON.stringify(infoItemValues)}, "labels": ${JSON.stringify(infoItemLabels)}, "subLabels": ${JSON.stringify(infoItemSubLabels)} }`;
+}
+
+/**
+ * Get the data nfo for each path
+ */
+const getGroupLabelDataInfo = ({ context }) => (d, i) => {
+
+    const is2d = context.is2d();
+    const data = {
+        values: context.getValues(),
+        labels: context.getLabels(),
+        subLabels: context.getSubLabels()
+    };
+
+    const infoItemValues = data.values.map(item => is2d ? item.reduce((acc, current) => acc + current, 0) : item ) || [];
+    const infoItemLabels = data.labels || [];
+
+    const sectionDetailsAvailable = (data.subLabels?.length && is2d);
+    const sectionsDetailsObject = sectionDetailsAvailable ? data.values.map(arr => arr.map( (nestedArr, index) => ( { value: nestedArr, name: data.subLabels?.[index] || "NA" } ))) : undefined;
+    const sectionsDetails = sectionDetailsAvailable ? `, "sectionsDetails": ${JSON.stringify(sectionsDetailsObject)}` : ""; 
+
+    return `{ "mouseOnTooltipLabel": true ,"values": ${JSON.stringify(infoItemValues)}, "labels": ${JSON.stringify(infoItemLabels)} ${sectionsDetails} }`;
 }
 
 /**
@@ -390,6 +426,9 @@ const drawInfo = ({
             labelFormatCallback = format.value;
         }
 
+        const groupLabelsCallbackHandler = onEachGroupLabelsCallbacksHandler({ context });
+        const getDataInfoHandler = getGroupLabelDataInfo({ context });
+
         getInfoSvgGroup(id, margin).selectAll('g.label__group')
             .data(info)
             .join(
@@ -397,6 +436,7 @@ const drawInfo = ({
 
                     return enter.append("g")
                         .attr("class", "label__group")
+                        .attr('data-info', getDataInfoHandler)
                         .each(function (d, i) {
                             const x = !vertical ? calcTextPos(i) : margin.text.left;
                             const y = !vertical ? margin.text.top : calcTextPos(i);
@@ -430,10 +470,20 @@ const drawInfo = ({
 
                             removeClickEvent(g);
                             addGroupLabelHandler(g, i);
+
                         })
+                        .transition() 
+                        .duration(400) 
+                        .on("end", function (d, i, nodes) {
+                            const pathElement = select(this);
+                            pathElement.style("pointer-events", "all");
+                            groupLabelsCallbackHandler(d, i, nodes);
+                        });
                 },
 
-                update => update.each(function (d, i) {
+                update => update
+                .attr('data-info', getDataInfoHandler)
+                .each(function (d, i) {
 
                     const x = !vertical ? calcTextPos(i) : margin.text.left;
                     const y = !vertical ? margin.text.top : calcTextPos(i);
@@ -470,9 +520,15 @@ const drawInfo = ({
 
                     removeClickEvent(g);
                     addGroupLabelHandler(g, i);
-
-                }),
-                exit => exit
+                })
+                .transition() 
+                .duration(400) 
+                .on("end", function (d, i, nodes) {
+                    const pathElement = select(this);
+                    pathElement.style("pointer-events", "all");
+                    groupLabelsCallbackHandler(d, i, nodes);
+                })
+                ,exit => exit
                     .each(function () {
                        const g = select(this);
                        removeClickEvent(g);

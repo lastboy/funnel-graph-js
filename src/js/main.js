@@ -38,6 +38,7 @@ const logger = getLogger({ module: "Main" });
  *          'tooltip': (event, { label, value }) => {},
  *          -- top label handler
  *          label: (event, { index, value, label, subLabel, sectionIndex }) => {}
+ *          tooltipLabel: (event, { value, label, sectionIndex }) => {}
  *      },
  * 
  *      format: {
@@ -49,6 +50,9 @@ const logger = getLogger({ module: "Main" });
  * 
  *      -- display the OOTB tooltip - on / off
  *      tooltip: true,
+ * 
+ *      -- display the OOTB tooltip label - on / off
+ *      tooltipLabel: false,
  * 
  *      -- remove the text - only graph will be display
  *      details: false,
@@ -81,6 +85,7 @@ class FunnelGraph {
 
         this.setDetails(options.hasOwnProperty('details') ? options.details : true);
         this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
+        this.setTooltipLabel(options.hasOwnProperty('tooltipLabel') ? options.tooltip : false);
         this.getDirection(options?.direction);
         this.setValues(options?.data?.values || []);
         this.setLabels(options?.data?.labels || []);
@@ -138,6 +143,10 @@ class FunnelGraph {
 
     showTooltip() {
         return this.tooltip;
+    }
+
+    showTooltipLabel() {
+        return this.tooltipLabel;
     }
 
     showDetails() {
@@ -343,6 +352,10 @@ class FunnelGraph {
 
     setTooltip(bool) {
         this.tooltip = bool;
+    }
+
+    setTooltipLabel(bool) {
+        this.tooltipLabel = bool;
     }
 
     setDetails(bool) {
@@ -625,6 +638,7 @@ class FunnelGraph {
                 { key: "margin", fn: (arg) => this.setMargin(arg) },
                 { key: "details", fn: (arg) => this.setDetails(arg) },
                 { key: "tooltip", fn: (arg) => this.setTooltip(arg) },
+                { key: "tooltipLabel", fn: (arg) => this.setTooltipLabel(arg) },
                 { key: "values", fn: (arg) => this.setValues(arg) },
                 { key: "labels", fn: (arg) => this.setLabels(arg) },
                 { key: "subLabels", fn: (arg) => this.setSubLabels(arg) },

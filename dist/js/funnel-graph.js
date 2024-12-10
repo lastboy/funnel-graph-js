@@ -5730,7 +5730,14 @@ var addMouseEventIfNotExists = exports.addMouseEventIfNotExists = function addMo
           if (tooltipTimeout) tooltipTimeout.stop();
           tooltipTimeout = (0, _d3Timer.timeout)(function () {
             var path = (0, _d3Selection.select)(_this);
-            if (context.showTooltip() && path && tooltipElement) {
+            var isMouseOnTooltip = handlerMetadata === null || handlerMetadata === void 0 ? void 0 : handlerMetadata.mouseOnTooltip;
+            var isMouseOnTooltipLabel = handlerMetadata === null || handlerMetadata === void 0 ? void 0 : handlerMetadata.mouseOnTooltipLabel;
+            var showTooltip = isMouseOnTooltip && context.showTooltip() || isMouseOnTooltipLabel && context.showTooltipLabel();
+            if (showTooltip && path && tooltipElement) {
+              var _handlerMetadata$sect;
+              var _metadata$index = metadata.index,
+                index = _metadata$index === void 0 ? -1 : _metadata$index;
+
               // get the mouse point
               var _pointer = (0, _d3Selection.pointer)(e, path),
                 _pointer2 = _slicedToArray(_pointer, 2),
@@ -5745,12 +5752,14 @@ var addMouseEventIfNotExists = exports.addMouseEventIfNotExists = function addMo
               var label = handlerMetadata.label || "Value";
               label = is2d ? handlerMetadata.subLabel || label : label;
               var value = handlerMetadata.value;
+              var sectionDetails = handlerMetadata === null || handlerMetadata === void 0 || (_handlerMetadata$sect = handlerMetadata.sectionsDetails) === null || _handlerMetadata$sect === void 0 ? void 0 : _handlerMetadata$sect[index];
               if (tooltipHandler) {
                 tooltipHandler(e, {
                   label: label,
                   value: value,
                   x: x,
-                  y: y
+                  y: y,
+                  sectionDetails: sectionDetails
                 });
               } else {
                 var format = context.getFormat();
@@ -5760,11 +5769,18 @@ var addMouseEventIfNotExists = exports.addMouseEventIfNotExists = function addMo
                 if (typeof (format === null || format === void 0 ? void 0 : format.tooltip) === "function") {
                   labelFormatCallback = format.tooltip;
                 }
-                var tooltipText = "".concat(label, ": ").concat(labelFormatCallback(handlerMetadata));
+                var tooltipText = "<div>".concat(label, ": ").concat(labelFormatCallback(handlerMetadata), "</div>");
+                if (sectionDetails) {
+                  tooltipText = sectionDetails.map(function (item) {
+                    return "<div><strong>".concat(item === null || item === void 0 ? void 0 : item.name, "</strong>: ").concat(labelFormatCallback(_objectSpread(_objectSpread({}, handlerMetadata), {}, {
+                      value: item === null || item === void 0 ? void 0 : item.value
+                    })), "</div>");
+                  }).join("");
+                }
                 tooltipElement
                 // TODO: when exceeding the document area - move the tooltip up/down or left/right
                 // according to the position (e.g. top /right window eƒxceeded or right) 
-                .style("left", clickPoint.x + 10 + "px").style("top", clickPoint.y + 10 + "px").text(tooltipText).style("opacity", "1").style("display", "flex");
+                .style("left", clickPoint.x + 10 + "px").style("top", clickPoint.y + 10 + "px").style("display", "flex").style("align-items", sectionDetails ? "start" : "center").style("flex-direction", "column").style("height", "auto").style("gap", "10px").style("padding", "4px").html(tooltipText).style("opacity", "1");
               }
             }
           }, 500);
@@ -5840,12 +5856,18 @@ var mouseInfoHandler = exports.mouseInfoHandler = function mouseInfoHandler(_ref
     var dataInfoValues = (dataInfoItem === null || dataInfoItem === void 0 ? void 0 : dataInfoItem.values) || [];
     var dataInfoLabels = (dataInfoItem === null || dataInfoItem === void 0 ? void 0 : dataInfoItem.labels) || [];
     var dataInfoSubLabels = (dataInfoItem === null || dataInfoItem === void 0 ? void 0 : dataInfoItem.subLabels) || [];
+    var sectionsDetails = dataInfoItem === null || dataInfoItem === void 0 ? void 0 : dataInfoItem.sectionsDetails;
+    var mouseOnTooltipLabel = dataInfoItem === null || dataInfoItem === void 0 ? void 0 : dataInfoItem.mouseOnTooltipLabel;
+    var mouseOnTooltip = dataInfoItem === null || dataInfoItem === void 0 ? void 0 : dataInfoItem.mouseOnTooltip;
     var index = metadata.hasOwnProperty("index") ? metadata.index : -1;
     dataInfoItemForArea = {
       value: dataInfoValues === null || dataInfoValues === void 0 ? void 0 : dataInfoValues[areaIndex],
       label: dataInfoLabels === null || dataInfoLabels === void 0 ? void 0 : dataInfoLabels[areaIndex],
       subLabel: dataInfoSubLabels === null || dataInfoSubLabels === void 0 ? void 0 : dataInfoSubLabels[index],
-      sectionIndex: areaIndex
+      sectionIndex: areaIndex,
+      sectionsDetails: sectionsDetails,
+      mouseOnTooltipLabel: mouseOnTooltipLabel,
+      mouseOnTooltip: mouseOnTooltip
     };
     metadata = _objectSpread(_objectSpread({}, metadata), dataInfoItemForArea);
     if (!tooltip && clickHandler) {
@@ -6057,12 +6079,26 @@ var onEachPathCallbacksHandler = function onEachPathCallbacksHandler(_ref6) {
   var context = _ref6.context;
   return function (d, i, nodes) {
     var callbacks = context.getCallBacks();
-    var d3Path = (0, _d3Selection.select)(nodes[i]);
+    var d3Element = (0, _d3Selection.select)(nodes[i]);
     var addMouseHandler = (0, _d3Handlers.addMouseEventIfNotExists)({
       context: context,
       updateLinePositions: updateLinePositions
     });
-    addMouseHandler(d3Path, typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.click) === 'function' ? callbacks.click : undefined, typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.tooltip) === 'function' ? callbacks.tooltip : undefined, {
+    addMouseHandler(d3Element, typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.click) === 'function' ? callbacks.click : undefined, typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.tooltip) === 'function' ? callbacks.tooltip : undefined, {
+      index: i
+    });
+  };
+};
+var onEachGroupLabelsCallbacksHandler = function onEachGroupLabelsCallbacksHandler(_ref7) {
+  var context = _ref7.context;
+  return function (d, i, nodes) {
+    var callbacks = context.getCallBacks();
+    var d3Element = (0, _d3Selection.select)(nodes[i]);
+    var addMouseHandler = (0, _d3Handlers.addMouseEventIfNotExists)({
+      context: context,
+      updateLinePositions: updateLinePositions
+    });
+    addMouseHandler(d3Element, null, typeof (callbacks === null || callbacks === void 0 ? void 0 : callbacks.tooltipLabel) === 'function' ? callbacks.tooltipLabel : undefined, {
       index: i
     });
   };
@@ -6071,8 +6107,8 @@ var onEachPathCallbacksHandler = function onEachPathCallbacksHandler(_ref6) {
 /**
  * Get the data nfo for each path
  */
-var getDataInfo = function getDataInfo(_ref7) {
-  var context = _ref7.context;
+var getDataInfo = function getDataInfo(_ref8) {
+  var context = _ref8.context;
   return function (d, i) {
     var is2d = context.is2d();
     var data = {
@@ -6085,16 +6121,50 @@ var getDataInfo = function getDataInfo(_ref7) {
     }) || [] : data.values || [];
     var infoItemLabels = data.labels || [];
     var infoItemSubLabels = (data === null || data === void 0 ? void 0 : data.subLabels) || [];
-    return "{ \"values\": ".concat(JSON.stringify(infoItemValues), ", \"labels\": ").concat(JSON.stringify(infoItemLabels), ", \"subLabels\": ").concat(JSON.stringify(infoItemSubLabels), " }");
+    return "{ \"mouseOnTooltip\": true, \"values\": ".concat(JSON.stringify(infoItemValues), ", \"labels\": ").concat(JSON.stringify(infoItemLabels), ", \"subLabels\": ").concat(JSON.stringify(infoItemSubLabels), " }");
+  };
+};
+
+/**
+ * Get the data nfo for each path
+ */
+var getGroupLabelDataInfo = function getGroupLabelDataInfo(_ref9) {
+  var context = _ref9.context;
+  return function (d, i) {
+    var _data$subLabels;
+    var is2d = context.is2d();
+    var data = {
+      values: context.getValues(),
+      labels: context.getLabels(),
+      subLabels: context.getSubLabels()
+    };
+    var infoItemValues = data.values.map(function (item) {
+      return is2d ? item.reduce(function (acc, current) {
+        return acc + current;
+      }, 0) : item;
+    }) || [];
+    var infoItemLabels = data.labels || [];
+    var sectionDetailsAvailable = ((_data$subLabels = data.subLabels) === null || _data$subLabels === void 0 ? void 0 : _data$subLabels.length) && is2d;
+    var sectionsDetailsObject = sectionDetailsAvailable ? data.values.map(function (arr) {
+      return arr.map(function (nestedArr, index) {
+        var _data$subLabels2;
+        return {
+          value: nestedArr,
+          name: ((_data$subLabels2 = data.subLabels) === null || _data$subLabels2 === void 0 ? void 0 : _data$subLabels2[index]) || "NA"
+        };
+      });
+    }) : undefined;
+    var sectionsDetails = sectionDetailsAvailable ? ", \"sectionsDetails\": ".concat(JSON.stringify(sectionsDetailsObject)) : "";
+    return "{ \"mouseOnTooltipLabel\": true ,\"values\": ".concat(JSON.stringify(infoItemValues), ", \"labels\": ").concat(JSON.stringify(infoItemLabels), " ").concat(sectionsDetails, " }");
   };
 };
 
 /**
  * Draw the SVG paths
  */
-var drawPaths = exports.drawPaths = function drawPaths(_ref8) {
-  var context = _ref8.context,
-    definitions = _ref8.definitions;
+var drawPaths = exports.drawPaths = function drawPaths(_ref10) {
+  var context = _ref10.context,
+    definitions = _ref10.definitions;
   var id = context.getId();
   var rootSvg = getRootSvgGroup(id);
   updateRootSVG({
@@ -6150,8 +6220,8 @@ var drawPaths = exports.drawPaths = function drawPaths(_ref8) {
 /**
  * SVG texts positioning according to the selected direction
  */
-var onEachTextHandler = function onEachTextHandler(_ref9) {
-  var offset = _ref9.offset;
+var onEachTextHandler = function onEachTextHandler(_ref11) {
+  var offset = _ref11.offset;
   return function (d, i) {
     var padding = 5;
     var bbox = this.getBBox();
@@ -6168,8 +6238,8 @@ var onEachTextHandler = function onEachTextHandler(_ref9) {
 /**
  * Update Line positions
  */
-var updateLinePositions = function updateLinePositions(_ref10) {
-  var context = _ref10.context;
+var updateLinePositions = function updateLinePositions(_ref12) {
+  var context = _ref12.context;
   var _context$getDimension = context.getDimensions({
       context: context,
       margin: false
@@ -6192,8 +6262,8 @@ var updateLinePositions = function updateLinePositions(_ref10) {
 /**
  * Handle the SVG text display on the graph
  */
-var drawInfo = exports.drawInfo = function drawInfo(_ref11) {
-  var context = _ref11.context;
+var drawInfo = exports.drawInfo = function drawInfo(_ref13) {
+  var context = _ref13.context;
   var id = context.getId();
   var margin = context.getMargin();
   var info = context.getInfo();
@@ -6224,8 +6294,14 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref11) {
     if (typeof (format === null || format === void 0 ? void 0 : format.value) === "function") {
       labelFormatCallback = format.value;
     }
+    var groupLabelsCallbackHandler = onEachGroupLabelsCallbacksHandler({
+      context: context
+    });
+    var getDataInfoHandler = getGroupLabelDataInfo({
+      context: context
+    });
     getInfoSvgGroup(id, margin).selectAll('g.label__group').data(info).join(function (enter) {
-      return enter.append("g").attr("class", "label__group").each(function (d, i) {
+      return enter.append("g").attr("class", "label__group").attr('data-info', getDataInfoHandler).each(function (d, i) {
         var x = !vertical ? calcTextPos(i) : margin.text.left;
         var y = !vertical ? margin.text.top : calcTextPos(i);
         var offsetValue = {
@@ -6254,9 +6330,13 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref11) {
         }).each(textHandlerPercentage);
         (0, _d3Handlers.removeClickEvent)(g);
         addGroupLabelHandler(g, i);
+      }).transition().duration(400).on("end", function (d, i, nodes) {
+        var pathElement = (0, _d3Selection.select)(this);
+        pathElement.style("pointer-events", "all");
+        groupLabelsCallbackHandler(d, i, nodes);
       });
     }, function (update) {
-      return update.each(function (d, i) {
+      return update.attr('data-info', getDataInfoHandler).each(function (d, i) {
         var x = !vertical ? calcTextPos(i) : margin.text.left;
         var y = !vertical ? margin.text.top : calcTextPos(i);
         var offsetValue = {
@@ -6285,6 +6365,10 @@ var drawInfo = exports.drawInfo = function drawInfo(_ref11) {
         }).each(textHandlerPercentage);
         (0, _d3Handlers.removeClickEvent)(g);
         addGroupLabelHandler(g, i);
+      }).transition().duration(400).on("end", function (d, i, nodes) {
+        var pathElement = (0, _d3Selection.select)(this);
+        pathElement.style("pointer-events", "all");
+        groupLabelsCallbackHandler(d, i, nodes);
       });
     }, function (exit) {
       return exit.each(function () {
@@ -6363,8 +6447,8 @@ var applyGradient = function applyGradient(id, d3Path, colors, index, gradientDi
   // Apply the gradient to the path
   d3Path.attr('fill', "url(\"#".concat(gradientId, "\")")).attr('stroke', "url(\"#".concat(gradientId, "\")"));
 };
-var destroySVG = exports.destroySVG = function destroySVG(_ref12) {
-  var context = _ref12.context;
+var destroySVG = exports.destroySVG = function destroySVG(_ref14) {
+  var context = _ref14.context;
   return function () {
     var id = context.getId();
     var svg = getRootSvg(id);
@@ -6398,10 +6482,10 @@ var destroySVG = exports.destroySVG = function destroySVG(_ref12) {
     }
   };
 };
-var updateEvents = exports.updateEvents = function updateEvents(_ref13) {
+var updateEvents = exports.updateEvents = function updateEvents(_ref15) {
   var _select;
-  var context = _ref13.context,
-    events = _ref13.events;
+  var context = _ref15.context,
+    events = _ref15.events;
   // register resize handlers
   var id = context.getId();
   if (!id) {
@@ -6447,7 +6531,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
  */
 var getLogger = exports.getLogger = function getLogger(_ref) {
   var module = _ref.module;
-  var projectName = "[Funnel Graph JS]";
+  var projectName = "[D3 Funnel Graph]";
   var _style = "background: #007acc; color: white; padding: 2px 4px; border-radius: 3px";
   var getColorStyle = function getColorStyle(method) {
     switch (method) {
@@ -6549,6 +6633,7 @@ var logger = (0, _logger.getLogger)({
  *          'tooltip': (event, { label, value }) => {},
  *          -- top label handler
  *          label: (event, { index, value, label, subLabel, sectionIndex }) => {}
+ *          tooltipLabel: (event, { value, label, sectionIndex }) => {}
  *      },
  * 
  *      format: {
@@ -6560,6 +6645,9 @@ var logger = (0, _logger.getLogger)({
  * 
  *      -- display the OOTB tooltip - on / off
  *      tooltip: true,
+ * 
+ *      -- display the OOTB tooltip label - on / off
+ *      tooltipLabel: false,
  * 
  *      -- remove the text - only graph will be display
  *      details: false,
@@ -6589,6 +6677,7 @@ var FunnelGraph = /*#__PURE__*/function () {
     this.gradientDirection = options.gradientDirection && options.gradientDirection === 'vertical' ? 'vertical' : 'horizontal';
     this.setDetails(options.hasOwnProperty('details') ? options.details : true);
     this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
+    this.setTooltipLabel(options.hasOwnProperty('tooltipLabel') ? options.tooltip : false);
     this.getDirection(options === null || options === void 0 ? void 0 : options.direction);
     this.setValues((options === null || options === void 0 || (_options$data = options.data) === null || _options$data === void 0 ? void 0 : _options$data.values) || []);
     this.setLabels((options === null || options === void 0 || (_options$data2 = options.data) === null || _options$data2 === void 0 ? void 0 : _options$data2.labels) || []);
@@ -6650,6 +6739,11 @@ var FunnelGraph = /*#__PURE__*/function () {
     key: "showTooltip",
     value: function showTooltip() {
       return this.tooltip;
+    }
+  }, {
+    key: "showTooltipLabel",
+    value: function showTooltipLabel() {
+      return this.tooltipLabel;
     }
   }, {
     key: "showDetails",
@@ -6914,6 +7008,11 @@ var FunnelGraph = /*#__PURE__*/function () {
     key: "setTooltip",
     value: function setTooltip(bool) {
       this.tooltip = bool;
+    }
+  }, {
+    key: "setTooltipLabel",
+    value: function setTooltipLabel(bool) {
+      this.tooltipLabel = bool;
     }
   }, {
     key: "setDetails",
@@ -7250,6 +7349,11 @@ var FunnelGraph = /*#__PURE__*/function () {
           key: "tooltip",
           fn: function fn(arg) {
             return _this3.setTooltip(arg);
+          }
+        }, {
+          key: "tooltipLabel",
+          fn: function fn(arg) {
+            return _this3.setTooltipLabel(arg);
           }
         }, {
           key: "values",

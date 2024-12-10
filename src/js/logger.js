@@ -10,7 +10,7 @@
  */
 export const getLogger = ({ module }) => {
 
-    const projectName = "[Funnel Graph JS]";
+    const projectName = "[D3 Funnel Graph]";
     const _style = "background: #007acc; color: white; padding: 2px 4px; border-radius: 3px";
     const getColorStyle = (method) => {
         switch (method) {

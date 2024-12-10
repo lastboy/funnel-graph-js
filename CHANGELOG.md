@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2] - 2024-12-10
+
+## Added 
+- Tooltip support for top label sections, now configurable as a general setting. This feature can be enabled or disabled using the tooltipLabel property.
+* Formatting Support: The tooltip for top labels supports the standard format configuration for customizing display values.
+* Callback for Custom Behavior: A new tooltipLabel callback is available to override the default behavior, providing full control over tooltip content and interactions.
+
 ## [1.1.1] - 2024-12-08
 
 ## Fixed

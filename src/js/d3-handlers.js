@@ -35,8 +35,14 @@ export const addMouseEventIfNotExists = ({ context, updateLinePositions }) => (p
                 tooltipTimeout = timeout(() => {
 
                     const path = select(this);
+                    const isMouseOnTooltip = handlerMetadata?.mouseOnTooltip;
+                    const isMouseOnTooltipLabel = handlerMetadata?.mouseOnTooltipLabel;
 
-                    if (context.showTooltip() && path && tooltipElement) {
+                    const showTooltip = (isMouseOnTooltip && context.showTooltip()) || (isMouseOnTooltipLabel && context.showTooltipLabel())
+
+                    if (showTooltip && path && tooltipElement) {
+
+                        const { index = -1 } = metadata;
 
                         // get the mouse point
                         const [x, y] = pointer(e, path);
@@ -47,8 +53,9 @@ export const addMouseEventIfNotExists = ({ context, updateLinePositions }) => (p
                         label = is2d ? handlerMetadata.subLabel || label : label;
                         const value = handlerMetadata.value;
 
+                        const sectionDetails = handlerMetadata?.sectionsDetails?.[index];
                         if (tooltipHandler) {
-                            tooltipHandler(e, { label, value, x, y })
+                            tooltipHandler(e, { label, value, x, y, sectionDetails });
                         } else {
 
                             const format = context.getFormat();
@@ -57,15 +64,26 @@ export const addMouseEventIfNotExists = ({ context, updateLinePositions }) => (p
                                 labelFormatCallback = format.tooltip;
                             }
 
-                            const tooltipText = `${label}: ${labelFormatCallback(handlerMetadata)}`;
+                            let tooltipText = `<div>${label}: ${labelFormatCallback(handlerMetadata)}</div>`;
+                            if (sectionDetails) {
+                                tooltipText = sectionDetails
+                                    .map((item) => `<div><strong>${item?.name}</strong>: ${labelFormatCallback({ ...handlerMetadata, value: item?.value })}</div>`)
+                                    .join("");
+                            }
+                            
                             tooltipElement
                                 // TODO: when exceeding the document area - move the tooltip up/down or left/right
                                 // according to the position (e.g. top /right window eƒxceeded or right) 
                                 .style("left", (clickPoint.x + 10) + "px")
                                 .style("top", (clickPoint.y + 10) + "px")
-                                .text(tooltipText)
+                                .style("display", "flex")
+                                .style("align-items", sectionDetails ? "start" : "center")
+                                .style("flex-direction", "column") 
+                                .style("height", "auto") 
+                                .style("gap", "10px") 
+                                .style("padding", "4px")
+                                .html(tooltipText)
                                 .style("opacity", "1")
-                                .style("display", "flex");
                         }
                     }
                 }, 500);
@@ -143,13 +161,20 @@ export const mouseInfoHandler = ({ context, clickHandler, metadata, tooltip, upd
     const dataInfoValues = dataInfoItem?.values || [];
     const dataInfoLabels = dataInfoItem?.labels || [];
     const dataInfoSubLabels = dataInfoItem?.subLabels || [];
+    const sectionsDetails = dataInfoItem?.sectionsDetails;
+    const mouseOnTooltipLabel = dataInfoItem?.mouseOnTooltipLabel;
+    const mouseOnTooltip = dataInfoItem?.mouseOnTooltip;
+
     const index = metadata.hasOwnProperty("index") ? metadata.index : -1;
 
     dataInfoItemForArea = {
         value: dataInfoValues?.[areaIndex],
         label: dataInfoLabels?.[areaIndex],
         subLabel: dataInfoSubLabels?.[index],
-        sectionIndex: areaIndex
+        sectionIndex: areaIndex,
+        sectionsDetails,
+        mouseOnTooltipLabel,
+        mouseOnTooltip
     }
 
     metadata = {
