@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.3] - 2025-01-01
+
+## Fixed
+- Initial configuration for Vertical direction is not working (Issue #31)
+
 ## [1.1.2] - 2024-12-10
 
 ## Added 
