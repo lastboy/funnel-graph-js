@@ -86,7 +86,7 @@ class FunnelGraph {
         this.setDetails(options.hasOwnProperty('details') ? options.details : true);
         this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
         this.setTooltipLabel(options.hasOwnProperty('tooltipLabel') ? options.tooltip : false);
-        this.getDirection(options?.direction);
+        this.setDirection(options?.direction);
         this.setValues(options?.data?.values || []);
         this.setLabels(options?.data?.labels || []);
         this.setSubLabels(options?.data?.subLabels || []);

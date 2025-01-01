@@ -6678,7 +6678,7 @@ var FunnelGraph = /*#__PURE__*/function () {
     this.setDetails(options.hasOwnProperty('details') ? options.details : true);
     this.setTooltip(options.hasOwnProperty('tooltip') ? options.tooltip : true);
     this.setTooltipLabel(options.hasOwnProperty('tooltipLabel') ? options.tooltip : false);
-    this.getDirection(options === null || options === void 0 ? void 0 : options.direction);
+    this.setDirection(options === null || options === void 0 ? void 0 : options.direction);
     this.setValues((options === null || options === void 0 || (_options$data = options.data) === null || _options$data === void 0 ? void 0 : _options$data.values) || []);
     this.setLabels((options === null || options === void 0 || (_options$data2 = options.data) === null || _options$data2 === void 0 ? void 0 : _options$data2.labels) || []);
     this.setSubLabels((options === null || options === void 0 || (_options$data3 = options.data) === null || _options$data3 === void 0 ? void 0 : _options$data3.subLabels) || []);
